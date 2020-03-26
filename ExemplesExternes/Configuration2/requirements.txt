@@ -1,0 +1,9 @@
+#opencv-python
+picamera
+pillow
+Flask
+Jinja2
+MarkupSafe
+Werkzeug
+itsdangerous
+snakeviz
