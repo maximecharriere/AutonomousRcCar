@@ -25,7 +25,7 @@ class SteeringController(PwmController):
         0   = MAX LEFT
         50  = FORWARD
         100 = MAX RIGHT"""
-        self.PwmObj.ChangeDutyCycle(myLib.Map(percent,0,100,self.MinPercent,self.MaxPercent))
+        self.PwmObj.ChangeDutyCycle(myLib.Map(percent,0,100,self.MaxPercent,self.MinPercent))
 
 
 class SpeedController(PwmController):
@@ -37,10 +37,8 @@ class SpeedController(PwmController):
 
     def Speed(self, percent):
         """Set the actual speed of the car
-        0   = STOP
-        100 = MAX SPEED"""
-        value = myLib.Map(percent,0,100,self.NeutralPercent,self.MaxPercent)
-        print(self.NeutralPercent)
-        print(value)
-        self.PwmObj.ChangeDutyCycle(value)
+        0   = MAX SPEED BACKWARD
+        50  = STOP
+        100 = MAX SPEED FORWARD"""
+        self.PwmObj.ChangeDutyCycle(myLib.Map(percent,0,100,self.MaxPercent,self.MinPercent))
 
