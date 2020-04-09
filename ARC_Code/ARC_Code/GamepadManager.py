@@ -8,14 +8,13 @@ from PwmController import SpeedController
 PIN_SPEED = 18
 PIN_STEERING = 19
 
-Controller = InputDevice('/dev/input/event0')
+Controller = InputDevice('/dev/input/event4')
 
 
 
 
 SpeedCtrl = SpeedController(PIN_SPEED,5.5,9.5)
 SteeringCtrl = SteeringController(PIN_STEERING,5.5,9.5)
-
 
 async def EventManager(device):
     async for event in device.async_read_loop():

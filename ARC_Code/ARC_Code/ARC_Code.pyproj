@@ -22,13 +22,19 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="camera.py">
+    <Compile Include="arducamTest.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="picameraTest.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="GamepadManager.py" />
     <Compile Include="myLib.py" />
     <Compile Include="printInfoInputs.py" />
     <Compile Include="PwmController.py" />
+    <Compile Include="threshold_inRange.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="TravailBachelor.py" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
