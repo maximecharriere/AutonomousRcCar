@@ -1,8 +1,12 @@
-from picamera import PiCamera
-from time import sleep
+import time
+import picamera
 
-camera = PiCamera()
-
-camera.start_preview()
-sleep(5)
-camera.stop_preview()
+with picamera.PiCamera() as camera:
+    camera.resolution = (2592, 1944)
+    camera.start_preview()
+    try:
+        for i in range(100):
+            camera.brightness = i
+            time.sleep(0.2)
+    finally:
+        camera.stop_preview()

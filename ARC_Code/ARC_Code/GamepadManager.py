@@ -8,7 +8,7 @@ from PwmController import SpeedController
 PIN_SPEED = 18
 PIN_STEERING = 19
 
-Controller = InputDevice('/dev/input/event4')
+Controller = InputDevice('/dev/input/event3')
 
 
 
@@ -20,6 +20,7 @@ async def EventManager(device):
     async for event in device.async_read_loop():
         if event.type == ecodes.EV_ABS:
             if  event.code == ecodes.ABS_X:  #Joy Gauche / Gauche- Droite+
+                print("HERE")
                 SteeringCtrl.Angle(myLib.Map(event.value, 0, 2**16, 0, 100))
             elif  event.code == ecodes.ABS_Y: #Joy Gauche / Haut- Bas+
                 SpeedCtrl.Speed(myLib.Map(event.value, 0, 2**16, 0, 100))
