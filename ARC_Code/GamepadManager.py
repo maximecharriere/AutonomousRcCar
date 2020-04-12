@@ -12,7 +12,6 @@ Controller = InputDevice('/dev/input/event3')
 
 
 
-
 SpeedCtrl = SpeedController(PIN_SPEED,5.5,9.5)
 SteeringCtrl = SteeringController(PIN_STEERING,5.5,9.5)
 
