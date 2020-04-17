@@ -6,9 +6,9 @@ import argparse
 max_value = 255
 max_value_H = 360//2
 low_H = 0
-low_S = 0
-low_V = 0
-high_H = max_value_H
+low_S = 56
+low_V = 190
+high_H = 7
 high_S = max_value
 high_V = max_value
 window_capture_name = 'Video Capture'
@@ -71,12 +71,12 @@ parser.add_argument('--camera', help='Camera divide number.', default=0, type=in
 args = parser.parse_args()
 
 ## [cap]
-cap = cv.VideoCapture("/home/pi/Documents/AutonomousRcCar/Images/picam.jpg") #args.camera
+cap = cv.VideoCapture("/home/pi/Documents/AutonomousRcCar/Images/ConfigCamera/2020-04-14_14-15-34_cts-100_DRC-high_sat-100_sharp-100_awbr-1.3_awbb-1.6_expMode-auto_expSpeed-30569.jpg") #args.camera
 ## [cap]
 
 ## [window]
-cv.namedWindow(window_capture_name)
-cv.namedWindow(window_detection_name)
+cv.namedWindow(window_capture_name, cv.WINDOW_NORMAL)
+cv.namedWindow(window_detection_name, cv.WINDOW_NORMAL)
 ## [window]
 
 ## [trackbar]

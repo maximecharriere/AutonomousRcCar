@@ -1,0 +1,8 @@
+low_H = 0
+high_H = 22
+
+low_S = 157
+high_S = 255
+
+low_V = 254
+high_V = 255
