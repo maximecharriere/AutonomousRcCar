@@ -18,11 +18,10 @@ SteeringCtrl = SteeringController(PIN_STEERING,5.5,9.5)
 async def EventManager(device):
     async for event in device.async_read_loop():
         if event.type == ecodes.EV_ABS:
-            if  event.code == ecodes.ABS_X:  #Joy Gauche / Gauche- Droite+
-                print("HERE")
-                SteeringCtrl.Angle(myLib.Map(event.value, 0, 2**16, 0, 100))
-            elif  event.code == ecodes.ABS_Y: #Joy Gauche / Haut- Bas+
-                SpeedCtrl.Speed(myLib.Map(event.value, 0, 2**16, 0, 100))
+            #if  event.code == ecodes.ABS_X:  #Joy Gauche / Gauche- Droite+
+                #SteeringCtrl.Angle(myLib.Map(event.value, 0, 2**16, 0, 100))
+            if  event.code == ecodes.ABS_Y: #Joy Gauche / Haut- Bas+
+                SpeedCtrl.Speed(myLib.Map(event.value, 0, 2**16, 30, 60))
         #    elif event.code == ecodes.ABS_RX: #Joy Droit / Gauche- Droite+
         #        print("Joy Droit / Gauche- Droite+")
         #    elif  event.code == ecodes.ABS_RY: #Joy Droit / Haut- Bas+

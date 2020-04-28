@@ -48,7 +48,7 @@ with picamera.PiCamera(resolution=(2592, 1920), framerate=30, sensor_mode=2) as 
         frameThreshold = cv2.inRange(frameHSV,  (low_H, low_S, low_V), (high_H, high_S, high_V))
         frameEdge = cv2.Canny(frameThreshold, 100,400)
 
-        plt.subplot(121),plt.imshow(frameThreshold,cmap = 'gray')
+        plt.subplot(121),plt.imshow(frameBGR,cmap = 'gray')
         plt.title('Original Image'), plt.xticks([]), plt.yticks([])
         plt.subplot(122),plt.imshow(frameEdge,cmap = 'gray')
         plt.title('Edge Image'), plt.xticks([]), plt.yticks([])
