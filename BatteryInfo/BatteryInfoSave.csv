@@ -1786,3 +1786,4 @@ Datetime              ,    Battery status    ,    USB Power Input,  GPIO Power I
 29.04.2020 00:30:01   ,    CHARGING_FROM_IN  ,    PRESENT      ,    NOT_PRESENT  ,    96  ,    4162  ,    -4    ,    5011  ,    789   ,    24
 29.04.2020 00:31:02   ,    CHARGING_FROM_IN  ,    PRESENT      ,    NOT_PRESENT  ,    96  ,    4155  ,    -4    ,    5011  ,    918   ,    24
 29.04.2020 00:32:01   ,    CHARGING_FROM_IN  ,    PRESENT      ,    NOT_PRESENT  ,    96  ,    4155  ,    -4    ,    5010  ,    987   ,    24
+29.04.2020 00:33:01   ,    CHARGING_FROM_IN  ,    PRESENT      ,    NOT_PRESENT  ,    96  ,    4152  ,    -4    ,    5002  ,    1137  ,    24
