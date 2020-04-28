@@ -12,13 +12,13 @@ IoVoltage = PiJuice.status.GetIoVoltage()
 IoCurrent = PiJuice.status.GetIoCurrent()
 BatteryTemperature = PiJuice.status.GetBatteryTemperature()
 
-print(f"{datetime.datetime.now().strftime('%d.%m.%Y %H:%M:%S')},\
-    {Status['data']['battery']},\
-    {Status['data']['powerInput']},\
-    {Status['data']['powerInput5vIo']},\
-    {ChargeLevel['data']},\
-    {BatteryVoltage['data']},\
-    {BatteryCurrent['data']},\
-    {IoVoltage['data']},\
-    {IoCurrent['data']},\
+print(f"{datetime.datetime.now().strftime('%d.%m.%Y %H:%M:%S'):<22},\
+    {Status['data']['battery']:<18},\
+    {Status['data']['powerInput']:<13},\
+    {Status['data']['powerInput5vIo']:<13},\
+    {ChargeLevel['data']:<4},\
+    {BatteryVoltage['data']:<6},\
+    {BatteryCurrent['data']:<6},\
+    {IoVoltage['data']:<6},\
+    {IoCurrent['data']:<6},\
     {BatteryTemperature['data']}")

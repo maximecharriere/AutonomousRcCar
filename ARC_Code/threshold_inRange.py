@@ -2,13 +2,16 @@
 from __future__ import print_function
 import cv2 as cv
 import argparse
+import picamera
+import numpy as np
+import time
 
 max_value = 255
 max_value_H = 360//2
-low_H = 0
-low_S = 56
-low_V = 190
-high_H = 7
+low_H = 3
+low_S = 153
+low_V = 254
+high_H = 25
 high_S = max_value
 high_V = max_value
 window_capture_name = 'Video Capture'
@@ -70,9 +73,6 @@ parser = argparse.ArgumentParser(description='Code for Thresholding Operations u
 parser.add_argument('--camera', help='Camera divide number.', default=0, type=int)
 args = parser.parse_args()
 
-## [cap]
-cap = cv.VideoCapture("/home/pi/Documents/AutonomousRcCar/Images/ConfigCamera/2020-04-14_14-15-34_cts-100_DRC-high_sat-100_sharp-100_awbr-1.3_awbb-1.6_expMode-auto_expSpeed-30569.jpg") #args.camera
-## [cap]
 
 ## [window]
 cv.namedWindow(window_capture_name, cv.WINDOW_NORMAL)
@@ -89,25 +89,37 @@ cv.createTrackbar(high_V_name, window_detection_name , high_V, max_value, on_hig
 ## [trackbar]
 
 ## If a still image is set
-ret, frame = cap.read()
-    
-while True:
-    ## [while]
-    
-    ## If a camera is set
-    #ret, frame = cap.read()
-    #if frame is None:
-    #    break
+# cap = cv.VideoCapture("/home/pi/Documents/AutonomousRcCar/Images/ConfigCamera/2020-04-14_14-15-34_cts-100_DRC-high_sat-100_sharp-100_awbr-1.3_awbb-1.6_expMode-auto_expSpeed-30569.jpg") #args.camera
+# ret, frame = cap.read()
 
-    frame_HSV = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
-    frame_threshold = cv.inRange(frame_HSV, (low_H, low_S, low_V), (high_H, high_S, high_V))
-    ## [while]
+frameBGR = np.empty((1920, 2592, 3), dtype=np.uint8)
+with picamera.PiCamera(resolution=(2592, 1920), framerate=30, sensor_mode=2) as camera: 
+    # Camera configuration
+    camera.exposure_mode = 'auto' 
+    camera.meter_mode = 'average'
+    camera.contrast = 100
+    camera.drc_strength = 'high'
+    camera.saturation = 100
+    camera.sharpness = 100
+    time.sleep(2)  
 
-    ## [show]
-    cv.imshow(window_capture_name, frame)
-    cv.imshow(window_detection_name, frame_threshold)
-    ## [show]
+    while True:
+        ## [while]
+        
+        ## If a camera is set
+        camera.capture(frameBGR, 'bgr')
+        #if frame is None:
+        #    break
 
-    key = cv.waitKey(30)
-    if key == ord('q') or key == 27:
-        break
+        frame_HSV = cv.cvtColor(frameBGR, cv.COLOR_BGR2HSV)
+        frame_threshold = cv.inRange(frame_HSV, (low_H, low_S, low_V), (high_H, high_S, high_V))
+        ## [while]
+
+        ## [show]
+        cv.imshow(window_capture_name, frameBGR)
+        cv.imshow(window_detection_name, frame_threshold)
+        ## [show]
+
+        key = cv.waitKey(5)
+        if key == ord('q') or key == 27:
+            break
