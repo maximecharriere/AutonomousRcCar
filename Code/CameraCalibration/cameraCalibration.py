@@ -1,3 +1,20 @@
+#!/usr/bin/env python3
+
+## ----------------------------------- Infos -----------------------------------
+#   Author:            Maxime Charriere
+#   Project:           Autonomous RC Car
+#   File:              cameraCalibration.py
+#   Link:              https://github.com/maximecharriere/AutonomousRcCar
+#   Creation date :    18.04.2020
+#   Last modif date:   04.05.2020
+## ----------------------------------- Infos -----------------------------------
+
+## -------------------------------- Description --------------------------------
+#   Privide functions to get camera calibration parameters and to undistort
+#   a picture with with parameters
+## -------------------------------- Description --------------------------------
+
+
 import numpy as np
 import cv2
 import glob
@@ -17,15 +34,20 @@ def getCameraCalibrationParameters(nRow, nCol, imgDirectory, calParamFile=None, 
     imgpoints = [] # 2d points in image plane.
 
     # Calibration images folder
+    imgDirectory = imgDirectory+"/*.jpg"
     images = glob.glob(imgDirectory)
 
     # Find chestboard corners in all images
     for i, fname in enumerate(images):
         # Load image
         img = cv2.imread(fname)
-        gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         # Find the chess board corners
         ret, corners = cv2.findChessboardCorners(gray, (nCol,nRow),None)
+        # Draw and save the corners in new image
+        if saveDrawedImg:
+            drawedImg = cv2.drawChessboardCorners(img, (nCol,nRow), corners, ret)
+            cv2.imwrite(fname.replace(".jpg","_findedCorners.jpg"), drawedImg) 
         # If found, add object points, image points (after refining them)
         if ret == True:
             objpoints.append(objp)
@@ -33,13 +55,8 @@ def getCameraCalibrationParameters(nRow, nCol, imgDirectory, calParamFile=None, 
             criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001) #Max 30 iter and epsilon of 0.001
             corners2 = cv2.cornerSubPix(gray,corners,(11,11),(-1,-1), criteria)
             imgpoints.append(corners2)
-
-            # Draw and save the corners in new image
-            if saveDrawedImg:
-                img = cv2.drawChessboardCorners(img, (nCol,nRow), corners2,ret)
-                cv2.imwrite(fname.replace(".jpg","_findedCorners.jpg"), img) 
         else:
-            print(f"Corner not found in img {fname}")
+            print(f"Corners not found in img {fname}")
         # print progression
         print(f"Image {i+1}/{len(images)} analysed")
     
@@ -56,32 +73,19 @@ def getCameraCalibrationParameters(nRow, nCol, imgDirectory, calParamFile=None, 
 
     return mtx, dist
 
-def undistort(img, calParamFile):
+
+def undistort(img, calParamFile, crop = True):
     try:
         with open(calParamFile, mode='rb') as fd:
             file = pickle.load(fd)    
             mtx = file['mtx']
             dist = file['dist']
-            h,  w = img.shape[:2]
-            mtx_new, roi = cv2.getOptimalNewCameraMatrix(mtx,dist,(img.shape[1], img.shape[0]), 1)
-            undistortedImg = cv2.undistort(img, mtx, dist, None, None) # (img, mtx, dist, None, mtx_new) to get full image
-            return undistortedImg
+            mtx_new = None
+            if not crop:
+                mtx_new, roi = cv2.getOptimalNewCameraMatrix(mtx,dist,(img.shape[1], img.shape[0]), 1)
+            return cv2.undistort(img, mtx, dist, None, mtx_new)
     except FileNotFoundError :
         print("File with calibration parameters not found")
 
 
-
-#getCameraCalibrationParameters(nRow=5, nCol=8, imgDirectory='/home/pi/Documents/AutonomousRcCar/ARC_Code/CameraCalibration/ImagesV2andV3/*.jpg', calParamFile="/home/pi/Documents/AutonomousRcCar/ARC_Code/CameraCalibration/cameraCalibrationParam_V2andV3.pickle", saveDrawedImg=True)
-
-img = cv2.imread('/home/pi/Documents/AutonomousRcCar/Images/RoadV3.jpg')
-# img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-
-img_undistort = undistort(img, calParamFile="/home/pi/Documents/AutonomousRcCar/ARC_Code/CameraCalibration/cameraCalibrationParam_V2.pickle")
-cv2.imwrite("/home/pi/Documents/AutonomousRcCar/ARC_Code/CameraCalibration/CalibrationResult_V2.png", img_undistort) 
-
-
-# plt.subplot(121),plt.imshow(img,cmap = 'gray')
-# plt.title('Original Image')
-# plt.subplot(122),plt.imshow(img_undistort,cmap = 'gray')
-# plt.title('Undistort Image')
-# plt.show()
+#getCameraCalibrationParameters(5, 8, "/home/pi/Documents/AutonomousRcCar/Code/CameraCalibration/ImagesV2", calParamFile="/home/pi/Documents/AutonomousRcCar/Code/CameraCalibration/cameraCalibrationParam_V2.pickle", saveDrawedImg=False)
