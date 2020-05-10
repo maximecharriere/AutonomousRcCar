@@ -21,6 +21,7 @@ import argparse
 import picamera
 import numpy as np
 import time
+import myLib
 
 max_value = 255
 max_value_H = 360//2
@@ -112,14 +113,8 @@ cv.createTrackbar(high_V_name, window_detection_name , high_V, max_value, on_hig
 
 frameBGR = np.empty((1920, 2592, 3), dtype=np.uint8)
 with picamera.PiCamera(resolution=(2592, 1920), framerate=30, sensor_mode=2) as camera: 
-    # Camera configuration
-    camera.exposure_mode = 'auto' 
-    camera.meter_mode = 'average'
-    camera.contrast = 100
-    camera.drc_strength = 'high'
-    camera.saturation = 100
-    camera.sharpness = 100
     time.sleep(2)  
+    myLib.PrintCamInfos(camera)
 
     while True:
         ## [while]
