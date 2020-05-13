@@ -23,21 +23,31 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 from CameraCalibration import cameraCalibration
 from PerspectiveWarp import perspectiveWarp
+from PwmController import SteeringController, SpeedController
 
 ## Parameters
+
+# Pin declaration with BCM format
+PIN_SPEED = 18
+PIN_STEERING = 19
+
 camResolution=(640, 480) #(2592, 1952) and not (2592, 1944) because high must be a multiple of 16
-min_line_area = 0.5 #in % of img area
+min_line_area = 0.1 #in % of img area
 low_H = 0
 low_S = 0
 low_V = 0
 high_H = 180
 high_S = 255
-high_V = 80
+high_V = 90
 perspectiveWarpPoints = [(173, 1952),(2560, 1952),(870, 920),(1835, 920)]
 perspectiveWarpPointsResolution = (2592, 1952)
 SaveFirstFrame = False
 ShowCamPreview = False
-ShowPlot = False
+ShowPlot = True
+
+## Objects
+# SpeedCtrl = SpeedController(PIN_SPEED,5.5,9.5)
+SteeringCtrl = SteeringController(PIN_STEERING,4,10)
 
 with picamera.PiCamera(resolution=camResolution, sensor_mode=2) as camera: 
     with picamera.array.PiRGBArray(camera, size=camResolution) as rawCapture :
@@ -55,7 +65,7 @@ with picamera.PiCamera(resolution=camResolution, sensor_mode=2) as camera:
         for frame in camera.capture_continuous(rawCapture , format="bgr", use_video_port=True):
             frameBGR = frame.array
             frameBGR_calibrate = cameraCalibration.undistort(frameBGR, calParamFile="/home/pi/Documents/AutonomousRcCar/Code/CameraCalibration/cameraCalibrationParam_V2.pickle",crop=True)
-            frameBGR_warped = perspectiveWarp.perspective_warp(frameBGR_calibrate, perspectiveWarpPoints, [30, 0, 30, 0], perspectiveWarpPointsResolution)
+            frameBGR_warped = perspectiveWarp.perspective_warp(frameBGR_calibrate, perspectiveWarpPoints, [80, 0, 80, 0], perspectiveWarpPointsResolution)
             frameHSV = cv2.cvtColor(frameBGR_warped, cv2.COLOR_BGR2HSV)
 
             ## Threshold
@@ -81,10 +91,15 @@ with picamera.PiCamera(resolution=camResolution, sensor_mode=2) as camera:
                     coef.append(np.polyfit(y, x, 1)) #inversion of x and y because lines are mostly vertical
                 
                 coef = np.array(coef)
-                print(np.mean(coef[:,0]))
+                slop = np.mean(coef[:,0])
 
             else:
                 print("No line found")
+
+            ## Change steering
+            angle = myLib.Map(slop, 1, -1, 35, 65)
+            print(f"Slop: {slop}  Angle: {angle}")
+            SteeringCtrl.Angle(angle)
 
             ## Reset analised frame
             rawCapture.truncate(0)
