@@ -15,7 +15,7 @@
 ## -------------------------------- Description --------------------------------
 
 import RPi.GPIO as GPIO
-import myLib
+from Utils import myLib
 
 class PwmController:
     def __init__(self, pin, minPercent, maxPercent):
@@ -41,6 +41,10 @@ class SteeringController(PwmController):
         0   = MAX LEFT
         50  = FORWARD
         100 = MAX RIGHT"""
+        if(percent<0):
+            percent = 0
+        elif(percent>100):
+            percent = 100
         self.PwmObj.ChangeDutyCycle(myLib.Map(percent,0,100,self.MaxPercent,self.MinPercent))
 
 
@@ -56,5 +60,9 @@ class SpeedController(PwmController):
         0   = MAX SPEED BACKWARD
         50  = STOP
         100 = MAX SPEED FORWARD"""
+        if(percent<0):
+            percent = 0
+        elif(percent>100):
+            percent = 100
         self.PwmObj.ChangeDutyCycle(myLib.Map(percent,0,100,self.MaxPercent,self.MinPercent))
 

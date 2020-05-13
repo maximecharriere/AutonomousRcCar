@@ -22,8 +22,7 @@ import pickle
 import matplotlib.pyplot as plt
 
 
-
-def getCameraCalibrationParameters(nRow, nCol, imgDirectory, calParamFile=None, saveDrawedImg=False):
+def getCameraCalibrationParameters(nRow, nCol, imgDirectory, destImgSize = None, calParamFile=None, saveDrawedImg=False):
     # prepare real world point as [x,y,z] coordinate. Z always on the same plane, so it keep 0. 
     # XY are (0,0),(1,0),(2,0),...,(8,0), (0,1),(1,1),...,(8,1), (0,2),......,(8,5)
     objp = np.zeros((nRow*nCol,3), np.float32)
@@ -36,7 +35,9 @@ def getCameraCalibrationParameters(nRow, nCol, imgDirectory, calParamFile=None, 
     # Calibration images folder
     imgDirectory = imgDirectory+"/*.jpg"
     images = glob.glob(imgDirectory)
-
+    if (len(images)<1):
+        raise ValueError("No file found")
+    
     # Find chestboard corners in all images
     for i, fname in enumerate(images):
         # Load image
@@ -44,10 +45,6 @@ def getCameraCalibrationParameters(nRow, nCol, imgDirectory, calParamFile=None, 
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         # Find the chess board corners
         ret, corners = cv2.findChessboardCorners(gray, (nCol,nRow),None)
-        # Draw and save the corners in new image
-        if saveDrawedImg:
-            drawedImg = cv2.drawChessboardCorners(img, (nCol,nRow), corners, ret)
-            cv2.imwrite(fname.replace(".jpg","_findedCorners.jpg"), drawedImg) 
         # If found, add object points, image points (after refining them)
         if ret == True:
             objpoints.append(objp)
@@ -55,6 +52,10 @@ def getCameraCalibrationParameters(nRow, nCol, imgDirectory, calParamFile=None, 
             criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001) #Max 30 iter and epsilon of 0.001
             corners2 = cv2.cornerSubPix(gray,corners,(11,11),(-1,-1), criteria)
             imgpoints.append(corners2)
+            # Draw and save the corners in new image
+            if saveDrawedImg:
+                drawedImg = cv2.drawChessboardCorners(img, (nCol,nRow), corners, ret)
+                cv2.imwrite(fname.replace(".jpg","_findedCorners.jpg"), drawedImg) 
         else:
             print(f"Corners not found in img {fname}")
         # print progression
@@ -63,12 +64,15 @@ def getCameraCalibrationParameters(nRow, nCol, imgDirectory, calParamFile=None, 
     # Calibrate the camera
     img_size = (img.shape[1], img.shape[0])
     ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, img_size, None,None)
+    mtx_new, roi = cv2.getOptimalNewCameraMatrix(mtx,dist,img_size, 1)
 
     # Save camera calibration for later use
     if calParamFile is not None:
         calParamPickle = {}
         calParamPickle['mtx'] = mtx
         calParamPickle['dist'] = dist
+        calParamPickle['mtx_new'] = mtx_new
+        calParamPickle['calImgShape'] = img.shape
         pickle.dump(calParamPickle, open(calParamFile, 'wb') )
 
     return mtx, dist
@@ -80,12 +84,31 @@ def undistort(img, calParamFile, crop = True):
             file = pickle.load(fd)    
             mtx = file['mtx']
             dist = file['dist']
+            calImgShape = file['calImgShape']
             mtx_new = None
             if not crop:
-                mtx_new, roi = cv2.getOptimalNewCameraMatrix(mtx,dist,(img.shape[1], img.shape[0]), 1)
+                mtx_new = file['mtx_new']
+            # Modify the mtx matrix if calibration images and image to distord are not the same shape
+            if(img.shape != calImgShape):
+                mtx[0,0] *= (img.shape[1] / calImgShape[1]) #fx
+                mtx[1,1] *= (img.shape[0] / calImgShape[0]) #fy
+                mtx[0,2] *= (img.shape[1] / calImgShape[1]) #cx
+                mtx[1,2] *= (img.shape[0] / calImgShape[0]) #cy
+                if mtx_new is not None:
+                    mtx_new[0,0] *= (img.shape[1] / calImgShape[1]) #fx
+                    mtx_new[1,1] *= (img.shape[0] / calImgShape[0]) #fy
+                    mtx_new[0,2] *= (img.shape[1] / calImgShape[1]) #cx
+                    mtx_new[1,2] *= (img.shape[0] / calImgShape[0]) #cy
             return cv2.undistort(img, mtx, dist, None, mtx_new)
     except FileNotFoundError :
         print("File with calibration parameters not found")
 
 
-#getCameraCalibrationParameters(5, 8, "/home/pi/Documents/AutonomousRcCar/Code/CameraCalibration/ImagesV2", calParamFile="/home/pi/Documents/AutonomousRcCar/Code/CameraCalibration/cameraCalibrationParam_V2.pickle", saveDrawedImg=False)
+# getCameraCalibrationParameters(5, 8, "/home/pi/Documents/AutonomousRcCar/Code/CameraCalibration/ImagesV2", calParamFile="/home/pi/Documents/AutonomousRcCar/Code/CameraCalibration/cameraCalibrationParam_V2.pickle", saveDrawedImg=False)
+# img = cv2.imread("/home/pi/Documents/AutonomousRcCar/Images/ConfigCamera/2020-05-13_15-41-51_cts-0_DRC-off_sat-0_sharp-0_awbr-1.3_awbb-1.6_expMode-auto_expSpeed-62974.jpg",cv2.IMREAD_COLOR)
+# frameBGR_calibrate = undistort(img, calParamFile="/home/pi/Documents/AutonomousRcCar/Code/CameraCalibration/cameraCalibrationParam_V2.pickle",crop=True)
+# cv2.namedWindow("Original", cv2.WINDOW_NORMAL)
+# cv2.namedWindow("Warped", cv2.WINDOW_NORMAL)
+# cv2.imshow("Original", img)
+# cv2.imshow("Warped", frameBGR_calibrate)
+# key = cv2.waitKey(0)
