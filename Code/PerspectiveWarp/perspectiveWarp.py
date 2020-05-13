@@ -4,14 +4,11 @@ import matplotlib.pyplot as plt
 
 
 def order_points(pts): 
-    # convert the "pts" list into a numpy array
-    pts = np.array(pts)
-
     # initialzie a list of coordinates that will be ordered
     # such that the first entry in the list is the top-left,
     # the second entry is the top-right, the third is the
     # bottom-right, and the fourth is the bottom-left
-    rect = np.zeros((4, 2), dtype = "float32")
+    rect = np.zeros_like(pts)
 
     # Get the index of the 4 points ordered along y axis (axis nbr 1)
     verticalIndex = pts[:,1].argsort()
@@ -43,9 +40,23 @@ def order_points(pts):
     return rect
 
 
-def perspective_warp(img, dstPoints, margin): #Inspired from https://www.pyimagesearch.com/2014/08/25/4-point-opencv-getperspective-transform-example/
+def perspective_warp(img, imgPoints, margin_pc=[0,0,0,0], refImageResolution = None): #Inspired from https://www.pyimagesearch.com/2014/08/25/4-point-opencv-getperspective-transform-example/
+    # convert the imgPoints and margin list into a numpy array
+    imgPoints = np.array(imgPoints,dtype="float32")
+    margin_pc = np.array(margin_pc)
+
+    # repositioning the points according to image shape if the base resolution of the points is given
+    if refImageResolution is not None:
+        imgPoints[:,0] *= (img.shape[1] / refImageResolution[0])
+        imgPoints[:,1] *= (img.shape[0] / refImageResolution[1])
+
+    # Convert margin from % to pxs
+    margin_pxs = np.zeros(4, dtype=int)
+    margin_pxs[::2] = (margin_pc[::2]*img.shape[1] / 100.0).astype(int)
+    margin_pxs[1::2] = (margin_pc[1::2]*img.shape[0] / 100.0).astype(int)
+
     # obtain a consistent order of the points and unpack them individually
-    rect = order_points(dstPoints)
+    rect= order_points(imgPoints)
     (tl, tr, br, bl) = rect
 
     ##          Compute the size of the new image
@@ -72,7 +83,7 @@ def perspective_warp(img, dstPoints, margin): #Inspired from https://www.pyimage
         [0, 0],
         [maxWidth - 1, 0],
         [maxWidth - 1, maxHeight - 1],
-        [0, maxHeight - 1]]) + margin[:2]
+        [0, maxHeight - 1]]) + margin_pxs[:2]
     # compute the perspective transform matrix and then apply it
     M = cv2.getPerspectiveTransform(rect, dst.astype("float32"))
-    return cv2.warpPerspective(img, M, (maxWidth+margin[0]+margin[2], maxHeight+margin[1]+margin[3]))
+    return cv2.warpPerspective(img, M, (maxWidth+sum(margin_pxs[::2]), maxHeight+sum(margin_pxs[1::2])),borderValue =(255,255,255))

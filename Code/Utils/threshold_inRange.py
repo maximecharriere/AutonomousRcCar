@@ -14,14 +14,24 @@
 #   proceed to an threshold
 #   A still image of a camera feed can be used
 ## -------------------------------- Description --------------------------------
-
 from __future__ import print_function
+
+import os,sys,inspect
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.dirname(currentdir)
+sys.path.insert(0,parentdir) 
+
 import cv2 as cv
 import argparse
 import picamera
+import picamera.array
 import numpy as np
 import time
 import myLib
+from CameraCalibration import cameraCalibration
+from PerspectiveWarp import perspectiveWarp
+
+camResolution=(640, 480)
 
 max_value = 255
 max_value_H = 360//2
@@ -41,6 +51,9 @@ low_V_name = 'Low V'
 high_H_name = 'High H'
 high_S_name = 'High S'
 high_V_name = 'High V'
+
+perspectiveWarpPoints = [(173, 1952),(2560, 1952),(870, 920),(1835, 920)]
+perspectiveWarpPointsResolution = (2592, 1952)
 
 ## [low]
 def on_low_H_thresh_trackbar(val):
@@ -107,34 +120,34 @@ cv.createTrackbar(low_V_name, window_detection_name , low_V, max_value, on_low_V
 cv.createTrackbar(high_V_name, window_detection_name , high_V, max_value, on_high_V_thresh_trackbar)
 ## [trackbar]
 
-## If a still image is set
+# ## If a still image is set
 # cap = cv.VideoCapture("/home/pi/Documents/AutonomousRcCar/Images/ConfigCamera/2020-04-14_14-15-34_cts-100_DRC-high_sat-100_sharp-100_awbr-1.3_awbb-1.6_expMode-auto_expSpeed-30569.jpg") #args.camera
 # ret, frame = cap.read()
+# if frame is None:
+#    break
 
-frameBGR = np.empty((1920, 2592, 3), dtype=np.uint8)
-with picamera.PiCamera(resolution=(2592, 1920), framerate=30, sensor_mode=2) as camera: 
-    time.sleep(2)  
-    myLib.PrintCamInfos(camera)
 
-    while True:
-        ## [while]
-        
-        ## If a camera is set
-        camera.capture(frameBGR, 'bgr')
-        #if frame is None:
-        #    break
+with picamera.PiCamera(resolution=camResolution, sensor_mode=2) as camera: 
+    with picamera.array.PiRGBArray(camera, size=camResolution) as rawCapture :
+        ## Let time to the camera for color and exposure calibration 
+        time.sleep(2)  
 
-        frame_HSV = cv.cvtColor(frameBGR, cv.COLOR_BGR2HSV)
-        frame_threshold = cv.inRange(frame_HSV, (low_H, low_S, low_V), (high_H, high_S, high_V))
-        ## [while]
+        for frame in camera.capture_continuous(rawCapture , format="bgr", use_video_port=True):
+            frameBGR = frame.array
+            frameBGR_calibrate = cameraCalibration.undistort(frameBGR, calParamFile="/home/pi/Documents/AutonomousRcCar/Code/CameraCalibration/cameraCalibrationParam_V2.pickle",crop=True)
+            frameBGR_warped = perspectiveWarp.perspective_warp(frameBGR_calibrate, perspectiveWarpPoints, [30, 0, 30, 0], perspectiveWarpPointsResolution)
+            frame_HSV = cv.cvtColor(frameBGR_warped, cv.COLOR_BGR2HSV)
+            frame_threshold = cv.inRange(frame_HSV, (low_H, low_S, low_V), (high_H, high_S, high_V))
 
-        ## [show]
-        cv.imshow(window_capture_name, frameBGR)
-        cv.imshow(window_detection_name, frame_threshold)
-        ## [show]
+            ## [show]
+            cv.imshow(window_capture_name, frameBGR_warped)
+            cv.imshow(window_detection_name, frame_threshold)
+            ## [show]
 
-        ## [quit]
-        key = cv.waitKey(5)
-        if key == ord('q') or key == 27:
-            break
-        ## [quit]
+            ## [quit]S
+            key = cv.waitKey(1)
+            if key == ord('q') or key == 27:
+                break
+            ## [quit]
+
+            rawCapture.truncate(0)
