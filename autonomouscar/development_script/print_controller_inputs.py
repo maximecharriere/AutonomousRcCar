@@ -23,7 +23,7 @@ import asyncio
 from evdev import InputDevice, categorize, ecodes ,util
 
 # Function to manage the events raised by the controller
-async def EventManager(device):
+async def event_manager(device):
     async for event in device.async_read_loop():
         if event.type == ecodes.EV_KEY:
             if event.value == True:
@@ -31,25 +31,28 @@ async def EventManager(device):
         elif event.type == ecodes.EV_ABS:
             print(f"Joystick: {ecodes.ABS[event.code]}    Value: {event.value}")
 
-def main(argv):
-    ControllerEventFile = InputDevice('/dev/input/event0')
+def print_help():
+    print(f"{os.path.basename(__file__)} -e <Controller event filename>")
 
+def main(argv):
+    event_filename = '/dev/input/event3'
     #Get arguments
     try:
-       opts, args = getopt.getopt(argv,"h?f:",["help","file="])
+       opts, args = getopt.getopt(argv,"h?e:",["help","event="])
     except getopt.GetoptError:
-       print(f"{os.path.basename(__file__)} -f <Controller event filename>")
+       print_help()
        sys.exit(2)
     for opt, arg in opts:
        if opt in ('-h', '-?', '--help'):
-          print(f"{os.path.basename(__file__)} -f <Controller event filename>")
+          print_help()
           sys.exit()
-       elif opt in ("-f", "--file"):
-          ControllerEventFile = InputDevice(arg)
+       elif opt in ("-e", "--event"):
+          event_filename = arg
             
     # Run the EventManager
+    Controller = InputDevice(event_filename)
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(EventManager(ControllerEventFile))
+    loop.run_until_complete(event_manager(Controller))
 
 if __name__ == "__main__":
    main(sys.argv[1:])

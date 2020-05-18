@@ -15,9 +15,9 @@
 ## -------------------------------- Description --------------------------------
 
 import RPi.GPIO as GPIO
-from Utils import myLib
+from . import my_lib
 
-class PwmController:
+class _PwmController:
     def __init__(self, pin, minPercent, maxPercent):
         self.PWM_FREQ = 50
         self.Pin = pin
@@ -29,9 +29,9 @@ class PwmController:
         self.PwmObj = GPIO.PWM(pin , self.PWM_FREQ)
         self.PwmObj.start(self.NeutralPercent)
 
-class SteeringController(PwmController):
+class SteeringController(_PwmController):
     def __init__(self, pin, minPercent, maxPercent):
-        PwmController.__init__(self,pin, minPercent, maxPercent)
+        _PwmController.__init__(self,pin, minPercent, maxPercent)
 
     def Forward(self):
         self.PwmObj.ChangeDutyCycle(self.NeutralPercent)
@@ -45,12 +45,12 @@ class SteeringController(PwmController):
             percent = 0
         elif(percent>100):
             percent = 100
-        self.PwmObj.ChangeDutyCycle(myLib.Map(percent,0,100,self.MaxPercent,self.MinPercent))
+        self.PwmObj.ChangeDutyCycle(my_lib.map(percent,0,100,self.MaxPercent,self.MinPercent))
 
 
-class SpeedController(PwmController):
+class SpeedController(_PwmController):
     def __init__(self, pin, minPercent, maxPercent):
-        PwmController.__init__(self,pin, minPercent, maxPercent)
+        _PwmController.__init__(self,pin, minPercent, maxPercent)
 
     def Stop(self):
         self.PwmObj.ChangeDutyCycle(self.NeutralPercent)
@@ -64,5 +64,5 @@ class SpeedController(PwmController):
             percent = 0
         elif(percent>100):
             percent = 100
-        self.PwmObj.ChangeDutyCycle(myLib.Map(percent,0,100,self.MaxPercent,self.MinPercent))
+        self.PwmObj.ChangeDutyCycle(my_lib.map(percent,0,100,self.MaxPercent,self.MinPercent))
 

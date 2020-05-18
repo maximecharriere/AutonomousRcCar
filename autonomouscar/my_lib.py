@@ -18,11 +18,13 @@
 # https://www.arduino.cc/reference/en/language/functions/math/map/
 
 import picamera
+import matplotlib.pyplot as plt
 
-def Map(x, in_min, in_max, out_min, out_max):
+def map(x, in_min, in_max, out_min, out_max):
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
 
-def PrintCamInfos ( camera):
+def print_caminfos (camera):
+    print("Camera infos:")
     print(f"Brightness (get/set):            {camera.brightness}")
     print(f"Exposure Mode (get/set):         {camera.exposure_mode}")
     print(f"Shutter Speed (get/set):         {camera.shutter_speed}")
@@ -41,3 +43,32 @@ def PrintCamInfos ( camera):
     print(f"Resolution (get/set):            {camera.resolution}")
     print(f"Framerate (get/set):             {camera.framerate}")
     print(f"Sensor Mode (get/set):           {camera.sensor_mode}")
+
+def plt_show_all_colorspace(img):
+    '''img must be BGR'''
+    frameHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    frameLAB = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+    frameLUV = cv2.cvtColor(img, cv2.COLOR_BGR2LUV)
+    
+    ## Show images with plt
+    fig, axs = plt.subplots(3, 3)
+    axs[0,0].imshow(frameHSV[0], cmap="gray")
+    axs[0,0].set_title("HSV H channel")
+    axs[0,1].imshow(frameHSV[1], cmap="gray")
+    axs[0,1].set_title("HSV S channel")
+    axs[0,2].imshow(frameHSV[2], cmap="gray")
+    axs[0,2].set_title("HSV V channel")
+    axs[1,0].imshow(frameLAB[0], cmap="gray")
+    axs[1,0].set_title("LAB L channel")
+    axs[1,1].imshow(frameLAB[1], cmap="gray")
+    axs[1,1].set_title("LAB A channel")
+    axs[1,2].imshow(frameLAB[2], cmap="gray")
+    axs[1,2].set_title("LAB B channel")
+    axs[2,0].imshow(frameLUV[0], cmap="gray")
+    axs[2,0].set_title("LUV L channel")
+    axs[2,1].imshow(frameLUV[1], cmap="gray")
+    axs[2,1].set_title("LUV U channel")
+    axs[2,2].imshow(frameLUV[2], cmap="gray")
+    axs[2,2].set_title("LUV V channel")
+
+    plt.show()

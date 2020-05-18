@@ -22,7 +22,7 @@ import pickle
 import matplotlib.pyplot as plt
 
 
-def getCameraCalibrationParameters(nRow, nCol, imgDirectory, destImgSize = None, calParamFile=None, saveDrawedImg=False):
+def getCameraCalibrationParameters(nRow, nCol, imgDirectory, calParamFile=None, saveDrawedImg=False):
     # prepare real world point as [x,y,z] coordinate. Z always on the same plane, so it keep 0. 
     # XY are (0,0),(1,0),(2,0),...,(8,0), (0,1),(1,1),...,(8,1), (0,2),......,(8,5)
     objp = np.zeros((nRow*nCol,3), np.float32)
@@ -100,15 +100,8 @@ def undistort(img, calParamFile, crop = True):
                     mtx_new[0,2] *= (img.shape[1] / calImgShape[1]) #cx
                     mtx_new[1,2] *= (img.shape[0] / calImgShape[0]) #cy
             return cv2.undistort(img, mtx, dist, None, mtx_new)
-    except FileNotFoundError :
-        print("File with calibration parameters not found")
+    except FileNotFoundError:
+        raise
 
 
 # getCameraCalibrationParameters(5, 8, "/home/pi/Documents/AutonomousRcCar/Code/CameraCalibration/ImagesV2", calParamFile="/home/pi/Documents/AutonomousRcCar/Code/CameraCalibration/cameraCalibrationParam_V2.pickle", saveDrawedImg=False)
-# img = cv2.imread("/home/pi/Documents/AutonomousRcCar/Images/ConfigCamera/2020-05-13_15-41-51_cts-0_DRC-off_sat-0_sharp-0_awbr-1.3_awbb-1.6_expMode-auto_expSpeed-62974.jpg",cv2.IMREAD_COLOR)
-# frameBGR_calibrate = undistort(img, calParamFile="/home/pi/Documents/AutonomousRcCar/Code/CameraCalibration/cameraCalibrationParam_V2.pickle",crop=True)
-# cv2.namedWindow("Original", cv2.WINDOW_NORMAL)
-# cv2.namedWindow("Warped", cv2.WINDOW_NORMAL)
-# cv2.imshow("Original", img)
-# cv2.imshow("Warped", frameBGR_calibrate)
-# key = cv2.waitKey(0)

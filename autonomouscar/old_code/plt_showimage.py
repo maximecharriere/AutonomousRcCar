@@ -17,7 +17,7 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 
-def pltShow(filename):
+def plt_show(filename):
     img = cv2.imread(filename)
     img = cv2.cvtColor(img,cv2.COLOR_RGB2BGR)
     plt.imshow(img,cmap = 'gray')
@@ -27,7 +27,7 @@ def pltShow(filename):
 def main(argv):
     #Get arguments
     try:
-       opts, args = getopt.getopt(argv,"h?i:",["help","image="])
+       opts, args = getopt.getopt(argv, "h?i:", ["help", "image="])
     except getopt.GetoptError:
        print(f"{os.path.basename(__file__)} -i <Image filename>")
        sys.exit(2)
@@ -36,7 +36,7 @@ def main(argv):
           print(f"{os.path.basename(__file__)} -i <Image filename>")
           sys.exit()
        elif opt in ("-i", "--image"):
-          pltShow(arg)
+          plt_show(arg)
 
 if __name__ == "__main__":
    main(sys.argv[1:])

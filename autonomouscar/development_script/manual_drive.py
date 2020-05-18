@@ -13,28 +13,50 @@
 #   Read inputs from controller to drive the car
 ## -------------------------------- Description --------------------------------
 
-
+import sys, getopt, os
+sys.path.append('..')
 import asyncio
-import myLib
-from evdev import InputDevice, categorize, ecodes ,util
-from PwmController import SteeringController, SpeedController
+from evdev import InputDevice, categorize, ecodes, util
+from autonomouscar import my_lib
+from autonomouscar.pwmcontroller import SteeringController, SpeedController
 
 """Pin declaration with BCM format"""
 PIN_SPEED = 18
 PIN_STEERING = 19
 
-Controller = InputDevice('/dev/input/event3')
+def print_help():
+    print(f"{os.path.basename(__file__)} -e <Controller event filename>")
 
-SpeedCtrl = SpeedController(PIN_SPEED,5.5,9.5)
-SteeringCtrl = SteeringController(PIN_STEERING,5.5,9.5)
+def main(argv):
+    event_filename = '/dev/input/event3'
+    #Get arguments
+    try:
+       opts, args = getopt.getopt(argv, "h?e:", ["help", "event="])
+    except getopt.GetoptError:
+       print_help()
+       sys.exit(2)
+    for opt, arg in opts:
+       if opt in ('-h', '-?', '--help'):
+          print_help()
+          sys.exit()
+       elif opt in ("-e", "--event"):
+           event_filename = arg
+    run_manually(event_filename)
 
-async def EventManager(device):
+def run_manually(event_filename):
+    controller = InputDevice(event_filename)
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(event_manager(controller))
+
+async def event_manager(device):
+    SpeedCtrl = SpeedController(PIN_SPEED,5.5,9.5)
+    SteeringCtrl = SteeringController(PIN_STEERING,5.5,9.5)
     async for event in device.async_read_loop():
         if event.type == ecodes.EV_ABS:
             if  event.code == ecodes.ABS_X:  #Joy Gauche / Gauche- Droite+
-                SteeringCtrl.Angle(myLib.Map(event.value, 0, 2**16, 0, 100))
+                SteeringCtrl.Angle(my_lib.map(event.value, 0, 2**16, 0, 100))
             elif  event.code == ecodes.ABS_Y: #Joy Gauche / Haut- Bas+
-                SpeedCtrl.Speed(myLib.Map(event.value, 0, 2**16, 30, 60))
+                SpeedCtrl.Speed(my_lib.map(event.value, 0, 2**16, 30, 60))
         #    elif event.code == ecodes.ABS_RX: #Joy Droit / Gauche- Droite+
         #        print("Joy Droit / Gauche- Droite+")
         #    elif  event.code == ecodes.ABS_RY: #Joy Droit / Haut- Bas+
@@ -78,5 +100,6 @@ async def EventManager(device):
         #        elif  event.code == ecodes.BTN_TL:
         #            print("Bouton gachette gauche")
 
-loop = asyncio.get_event_loop()
-loop.run_until_complete(EventManager(Controller))
+
+if __name__ == "__main__":
+   main(sys.argv[1:])

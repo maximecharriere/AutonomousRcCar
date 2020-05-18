@@ -3,7 +3,7 @@ import cv2
 import matplotlib.pyplot as plt
 
 
-def order_points(pts): 
+def _orderPoints(pts): 
     # initialzie a list of coordinates that will be ordered
     # such that the first entry in the list is the top-left,
     # the second entry is the top-right, the third is the
@@ -40,7 +40,7 @@ def order_points(pts):
     return rect
 
 
-def perspective_warp(img, imgPoints, margin_pc=[0,0,0,0], refImageResolution = None): #Inspired from https://www.pyimagesearch.com/2014/08/25/4-point-opencv-getperspective-transform-example/
+def warp(img, imgPoints, margin_pc=[0,0,0,0], refImageResolution = None): #Inspired from https://www.pyimagesearch.com/2014/08/25/4-point-opencv-getperspective-transform-example/
     # convert the imgPoints and margin list into a numpy array
     imgPoints = np.array(imgPoints,dtype="float32")
     margin_pc = np.array(margin_pc)
@@ -56,7 +56,7 @@ def perspective_warp(img, imgPoints, margin_pc=[0,0,0,0], refImageResolution = N
     margin_pxs[1::2] = (margin_pc[1::2]*img.shape[0] / 100.0).astype(int)
 
     # obtain a consistent order of the points and unpack them individually
-    rect= order_points(imgPoints)
+    rect= _orderPoints(imgPoints)
     (tl, tr, br, bl) = rect
 
     ##          Compute the size of the new image

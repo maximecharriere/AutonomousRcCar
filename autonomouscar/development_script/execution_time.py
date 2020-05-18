@@ -10,7 +10,7 @@ import cv2
 camResolution=(640, 480) #(2592, 1952) and not (2592, 1944) because high must be a multiple of 16
 min_line_area = 0.5 #in  of img area
 low_H = 0
-low_S = 0
+low_S = 0S
 low_V = 0
 high_H = 180
 high_S = 255
@@ -71,5 +71,6 @@ for i in range(line_label.size):
 coefNp = np.array(coef)
 slop = np.mean(coefNp[:,0])
 '''
+
 
 print(timeit.timeit(stmt=code_full, setup=setup_code, number=1000))
