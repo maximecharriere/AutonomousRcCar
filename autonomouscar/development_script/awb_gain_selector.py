@@ -21,11 +21,14 @@ def main(argv):
 
     with picamera.PiCamera(resolution=camResolution) as camera:
         with picamera.array.PiRGBArray(camera, size=camResolution) as rawCapture:
+            camera.awb_mode = 'off'
+            (rg, bg) = (1, 211/128)
+            camera.awb_gains = (rg, bg)
+            camera.contrast=50
+            camera.saturation=100
+            camera.sharpness=0
             # Let time to the camera for color and exposure calibration
             time.sleep(1)
-            (bg, rg) = camera.awb_gains
-            camera.awb_mode = 'off'
-            camera.awb_gains = (bg, rg)
 
             for frame in camera.capture_continuous(rawCapture, format="rgb", use_video_port=True):
                 frameRGB = frame.array
@@ -46,8 +49,8 @@ def main(argv):
                             rg += step
                         elif event.key == pygame.K_LEFT:
                             rg -= step
-                        camera.awb_gains = (bg, rg)
-                        print(f"Blue: {camera.awb_gains[0]}    Red: {camera.awb_gains[1]}")
+                        camera.awb_gains = (rg, bg)
+                        print(f"Red: {camera.awb_gains[0]}    Blue: {camera.awb_gains[1]}")
 
                 # Reset analised frame
                 rawCapture.truncate(0)

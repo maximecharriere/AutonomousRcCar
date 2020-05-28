@@ -15,7 +15,7 @@
 ## -------------------------------- Description --------------------------------
 
 import RPi.GPIO as GPIO
-from . import my_lib
+import my_lib
 
 class _PwmController:
     def __init__(self, pin, minPercent, maxPercent):

@@ -19,6 +19,8 @@
 
 import picamera
 import matplotlib.pyplot as plt
+import cv2
+import numpy as np
 
 def map(x, in_min, in_max, out_min, out_max):
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
@@ -72,3 +74,28 @@ def plt_show_all_colorspace(img):
     axs[2,2].set_title("LUV V channel")
 
     plt.show()
+
+def inRangeHSV(src, lowerb, upperb):
+    if not (len(src.shape) == 3):
+        raise ValueError("The source must be a 3D matrix")
+    if not (src.shape[2] == len(lowerb) == len(upperb) == 3):
+        raise ValueError("Parameters must have 3 channels")
+    
+    h_max = 180
+    h_min = 0
+    if (lowerb[0] <= upperb[0]):
+        return cv2.inRange(src, lowerb, upperb)
+    else:
+        mask1 = cv2.inRange(src, lowerb, (h_max, upperb[1], upperb[2]))
+        mask2 = cv2.inRange(src, (h_min, lowerb[1], lowerb[2]), upperb)
+        return mask1 | mask2
+
+def scaledSobelXY(img):
+    sobelx = cv2.Sobel(img, cv2.CV_16S, 1, 0) # Take the derivative in x
+    abs_sobelx = np.absolute(sobelx)
+    scaled_sobelx = np.uint8(255*abs_sobelx/np.max(abs_sobelx))
+
+    sobely = cv2.Sobel(img, cv2.CV_16S, 0, 1) # Take the derivative in y
+    abs_sobely = np.absolute(sobely)
+    scaled_sobely = np.uint8(255*abs_sobely/np.max(abs_sobely))
+    return np.sqrt(scaled_sobelx**2+scaled_sobely**2)

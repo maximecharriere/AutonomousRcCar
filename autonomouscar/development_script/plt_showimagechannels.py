@@ -31,7 +31,10 @@ def main(argv):
         with picamera.array.PiRGBArray(camera, size=camResolution) as rawCapture:
             (bg, rg) = camera.awb_gains
             camera.awb_mode = 'off'
-            camera.awb_gains = (1, 211/128)
+            camera.awb_gains = (111/128, 13/8)
+            camera.contrast=50
+            camera.saturation=100
+            camera.sharpness=0
             time.sleep(1) # Let time to the camera for color and exposure calibration
             my_lib.print_caminfos(camera)
 
@@ -57,11 +60,11 @@ def main(argv):
                 fig.tight_layout()
 
                 fig, axs = plt.subplots(3, 1)
-                axs[0].imshow(frameHSV[:,:,0], cmap="gray")
+                axs[0].imshow(my_lib.scaledSobelXY(frameHSV[:,:,0]))
                 axs[0].set_title("HSV H channel")
-                axs[1].imshow(frameHSV[:,:,1], cmap="gray")
+                axs[1].imshow(my_lib.scaledSobelXY(frameHSV[:,:,1]))
                 axs[1].set_title("HSV S channel")
-                axs[2].imshow(frameHSV[:,:,2], cmap="gray")
+                axs[2].imshow(my_lib.scaledSobelXY(frameHSV[:,:,2]))
                 axs[2].set_title("HSV V channel")
                 fig.tight_layout()
                 fig, axs = plt.subplots(3, 1)

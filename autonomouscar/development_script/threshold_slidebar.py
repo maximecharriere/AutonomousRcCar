@@ -16,10 +16,8 @@
 ## -------------------------------- Description --------------------------------
 from __future__ import print_function
 
-import os,sys,inspect
-currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-parentdir = os.path.dirname(currentdir)
-sys.path.insert(0,parentdir) 
+import sys
+sys.path.append('..')
 
 import cv2 as cv
 import argparse
@@ -34,12 +32,18 @@ camResolution=(640, 480)
 max_value = 255
 max_value_H = 360//2
 
-low_H = 0
-high_H = max_value_H
-low_S = 0
-high_S = max_value
-low_V = 0
-high_V = max_value
+low_H = 175
+low_S = 130 #70
+low_V = 50
+high_H = 30
+high_S = 255
+high_V = 255
+# low_H = 0
+# high_H = max_value_H
+# low_S = 0
+# high_S = max_value
+# low_V = 0
+# high_V = max_value
 
 window_capture_name = 'Video Capture'
 window_detection_name = 'Object Detection'
@@ -58,8 +62,8 @@ def on_low_H_thresh_trackbar(val):
     global low_H
     global high_H
     low_H = val
-    low_H = min(high_H-1, low_H)
-    cv.setTrackbarPos(low_H_name, window_detection_name, low_H)
+    # low_H = min(high_H-1, low_H)
+    # cv.setTrackbarPos(low_H_name, window_detection_name, low_H)
 ## [low]
 
 ## [high]
@@ -67,8 +71,8 @@ def on_high_H_thresh_trackbar(val):
     global low_H
     global high_H
     high_H = val
-    high_H = max(high_H, low_H+1)
-    cv.setTrackbarPos(high_H_name, window_detection_name, high_H)
+    # high_H = max(high_H, low_H+1)
+    # cv.setTrackbarPos(high_H_name, window_detection_name, high_H)
 ## [high]
 
 def on_low_S_thresh_trackbar(val):
@@ -127,15 +131,21 @@ cv.createTrackbar(high_V_name, window_detection_name , high_V, max_value, on_hig
 
 with picamera.PiCamera(resolution=camResolution, sensor_mode=2) as camera: 
     with picamera.array.PiRGBArray(camera, size=camResolution) as rawCapture :
+        (bg, rg) = camera.awb_gains
+        camera.awb_mode = 'off'
+        camera.awb_gains = (1, 211/128)#(111/128, 13/8)
+        camera.contrast=50
+        camera.saturation=100
+        camera.sharpness=0
         ## Let time to the camera for color and exposure calibration 
         time.sleep(2)  
 
         for frame in camera.capture_continuous(rawCapture , format="bgr", use_video_port=True):
             frameBGR = frame.array
-            frameBGR_calibrate = camera_calibration.undistort(frameBGR, calParamFile="/home/pi/Documents/AutonomousRcCar/Code/CameraCalibration/cameraCalibrationParam_V2.pickle",crop=True)
-            frameBGR_warped = perspective_warp.warp(frameBGR_calibrate, perspectiveWarpPoints, [30, 0, 30, 0], perspectiveWarpPointsResolution)
+            frameBGR_calibrate = camera_calibration.undistort(frameBGR, calParamFile="/home/pi/Documents/AutonomousRcCar/autonomouscar/resources/cameraCalibrationParam_V2.pickle",crop=True)
+            frameBGR_warped = perspective_warp.warp(frameBGR_calibrate, perspectiveWarpPoints, [80, 0, 80, 0], perspectiveWarpPointsResolution)
             frame_HSV = cv.cvtColor(frameBGR_warped, cv.COLOR_BGR2HSV)
-            frame_threshold = cv.inRange(frame_HSV, (low_H, low_S, low_V), (high_H, high_S, high_V))
+            frame_threshold = my_lib.inRangeHSV(frame_HSV, (low_H, low_S, low_V), (high_H, high_S, high_V))
 
             ## [show]
             cv.imshow(window_capture_name, frameBGR_warped)

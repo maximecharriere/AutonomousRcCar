@@ -24,6 +24,7 @@ import my_lib
 import camera_calibration
 import perspective_warp
 from pwmcontroller import SteeringController, SpeedController
+from scipy import stats
 
 # Parameters
 
@@ -34,14 +35,15 @@ PIN_STEERING = 19
 # (2592, 1952) and not (2592, 1944) because high must be a multiple of 16
 camResolution = (640, 480)
 min_line_area = 0.1  # in % of img area
-low_H = 0
-low_S = 0
-low_V = 0
-high_H = 180
+low_H = 175
+low_S = 100 #70
+low_V = 50
+high_H = 30
 high_S = 255
-high_V = 90
+high_V = 255
 perspectiveWarpPoints = [(173, 1952), (2560, 1952), (870, 920), (1835, 920)]
 perspectiveWarpPointsResolution = (2592, 1952)
+maxSD = 0.01
 SaveFirstFrame = False
 ShowCamPreview = False
 ShowPlot = True
@@ -53,6 +55,12 @@ SteeringCtrl = SteeringController(PIN_STEERING, 4, 10)
 def start():
     with picamera.PiCamera(resolution=camResolution, sensor_mode=2) as camera:
         with picamera.array.PiRGBArray(camera, size=camResolution) as rawCapture:
+            (bg, rg) = camera.awb_gains
+            camera.awb_mode = 'off'
+            camera.awb_gains = (1, 211/128)
+            camera.contrast=50
+            camera.saturation=100
+            camera.sharpness=0
             # Let time to the camera for color and exposure calibration
             time.sleep(1)
 
@@ -68,48 +76,58 @@ def start():
             for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
                 frameBGR = frame.array
                 frameBGR_calibrate = camera_calibration.undistort(
-                    frameBGR, calParamFile="/home/pi/Documents/AutonomousRcCar/Code/CameraCalibration/cameraCalibrationParam_V2.pickle", crop=True)
+                    frameBGR, calParamFile="/home/pi/Documents/AutonomousRcCar/autonomouscar/resources/cameraCalibrationParam_V2.pickle", crop=True)
                 frameBGR_warped = perspective_warp.warp(frameBGR_calibrate, perspectiveWarpPoints, [80, 0, 80, 0], perspectiveWarpPointsResolution)
                 frameHSV = cv2.cvtColor(frameBGR_warped, cv2.COLOR_BGR2HSV)
 
                 # Threshold
-                frameThreshold = cv2.inRange(
-                    frameHSV, (low_H, low_S, low_V), (high_H, high_S, high_V))
+                frameThreshold = my_lib.inRangeHSV(frameHSV, (low_H, low_S, low_V), (high_H, high_S, high_V))
+                # frameThreshold = cv2.morphologyEx(frameThreshold, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15,15)))
                 # to minimise the number of components and speed processing time (à mesurer)
-                frameThreshold = cv2.erode(frameThreshold, kernel=np.ones((3, 3)))
+                # frameThreshold = cv2.erode(frameThreshold, kernel=np.ones((3, 3)))
                 # frameEdge = cv2.Canny(frameThreshold, 100,400)
 
-                # ## Sobel
+                # # Sobel
                 # v_channel = frameHSV[:,:,2]
                 # sobelx = cv2.Sobel(v_channel, cv2.CV_16S, 1, 0) # Take the derivative in x
                 # abs_sobelx = np.absolute(sobelx) # Absolute x derivative to accentuate lines away from horizontal
                 # scaled_sobel = np.uint8(255*abs_sobelx/np.max(abs_sobelx))
 
                 # Connected components
-                retval, labels_img, stats, centroids = cv2.connectedComponentsWithStats(
+                _, labels_img, blobStats, _ = cv2.connectedComponentsWithStats(
                     frameThreshold, ltype=cv2.CV_16U)  # https://docs.opencv.org/master/d3/dc0/group__imgproc__shape.html
                 # the "1" is to exclude label 0 who is the background
                 line_label = np.where(
-                    stats[1:, cv2.CC_STAT_AREA] >= min_line_area*frameThreshold.size/100)[0]+1
+                    blobStats[1:, cv2.CC_STAT_AREA] >= min_line_area*frameThreshold.size/100)[0]+1
 
                 if (line_label.size > 0):
-                    # Polyfit
                     coef = []
+                    stdDeviation = []
+                    # Polyfit
                     for i in range(line_label.size):
                         y, x = np.where(labels_img == line_label[i])
-                        # inversion of x and y because lines are mostly vertical
-                        coef.append(np.polyfit(y, x, 1))
+                        p, V, = np.polyfit(y, x, 1, cov = True) # inversion of x and y because lines are mostly vertical
+                        coef.append(p)
+                        stdDeviation.append(np.sqrt(V[0,0]))
+
+                    # # Linregress
+                    # for i in range(line_label.size):
+                    #     y, x = np.where(labels_img == line_label[i])
+                    #     slope, intercept, r_value, p_value, std_err = stats.linregress(y, x) # inversion of x and y because lines are mostly vertical
+                    #     coef.append((slope, intercept))
+                    #     stdDeviation.append(r_value**2)
 
                     coef = np.array(coef)
-                    slop = np.mean(coef[:, 0])
-
+                    stdDeviation = np.array(stdDeviation)
+                    wantedLines = np.where(stdDeviation<maxSD)
+                    slop = np.mean(coef[wantedLines, 0])
+                    # Change steering
+                    angle = my_lib.map(slop, 1, -1, 35, 65)
+                    print(f"Slop: {slop}  Angle: {angle}")
+                    SteeringCtrl.Angle(angle)
                 else:
                     print("No line found")
 
-                # Change steering
-                angle = my_lib.map(slop, 1, -1, 35, 65)
-                print(f"Slop: {slop}  Angle: {angle}")
-                SteeringCtrl.Angle(angle)
 
                 # Reset analised frame
                 rawCapture.truncate(0)
@@ -135,6 +153,10 @@ def start():
                             [draw_x, draw_y]).T).astype(np.int32)
                         cv2.polylines(
                             coloredImg, [draw_points], False, (255, 0, 0), 5)
+                        textOrg = (blobStats[line_label[i],cv2.CC_STAT_LEFT] + int(blobStats[line_label[i],cv2.CC_STAT_WIDTH]/2), 
+                            blobStats[line_label[i],cv2.CC_STAT_TOP] + int(blobStats[line_label[i],cv2.CC_STAT_HEIGHT]/2))
+                        coloredImg = cv2.putText(coloredImg,f"SD = {stdDeviation[i]:.4f}",textOrg,
+                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
 
                     cv2.namedWindow("Original", cv2.WINDOW_NORMAL)
                     cv2.namedWindow("Calibrate", cv2.WINDOW_NORMAL)
