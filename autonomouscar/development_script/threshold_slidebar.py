@@ -33,7 +33,7 @@ max_value = 255
 max_value_H = 360//2
 
 low_H = 175
-low_S = 130 #70
+low_S = 100 #70
 low_V = 50
 high_H = 30
 high_S = 255
@@ -131,12 +131,12 @@ cv.createTrackbar(high_V_name, window_detection_name , high_V, max_value, on_hig
 
 with picamera.PiCamera(resolution=camResolution, sensor_mode=2) as camera: 
     with picamera.array.PiRGBArray(camera, size=camResolution) as rawCapture :
-        (bg, rg) = camera.awb_gains
-        camera.awb_mode = 'off'
-        camera.awb_gains = (1, 211/128)#(111/128, 13/8)
-        camera.contrast=50
-        camera.saturation=100
-        camera.sharpness=0
+        # (bg, rg) = camera.awb_gains
+        # camera.awb_mode = 'off'
+        # camera.awb_gains = (1, 211/128)#(111/128, 13/8)
+        # camera.contrast=50
+        # camera.saturation=100
+        # camera.sharpness=0
         ## Let time to the camera for color and exposure calibration 
         time.sleep(2)  
 

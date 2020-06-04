@@ -13,15 +13,17 @@
 #   Simply displays the image passed as a parameter in a plt window
 ## -------------------------------- Description --------------------------------
 
+import sys, os, getopt
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 
 def plt_show(filename):
-    img = cv2.imread(filename)
-    img = cv2.cvtColor(img,cv2.COLOR_RGB2BGR)
-    plt.imshow(img,cmap = 'gray')
-    plt.show()
+   assert os.path.isfile(filename), "Image not found"
+   img = cv2.imread(filename)
+   img = cv2.cvtColor(img,cv2.COLOR_RGB2BGR)
+   plt.imshow(img,cmap = 'gray')
+   plt.show()
 
 
 def main(argv):

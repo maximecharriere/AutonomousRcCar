@@ -91,11 +91,18 @@ def inRangeHSV(src, lowerb, upperb):
         return mask1 | mask2
 
 def scaledSobelXY(img):
-    sobelx = cv2.Sobel(img, cv2.CV_16S, 1, 0) # Take the derivative in x
-    abs_sobelx = np.absolute(sobelx)
-    scaled_sobelx = np.uint8(255*abs_sobelx/np.max(abs_sobelx))
+    derivative = sobelXY(img)
+    derivative_scaled = np.uint8(derivative/np.max(derivative)*255)
+    return derivative_scaled
 
-    sobely = cv2.Sobel(img, cv2.CV_16S, 0, 1) # Take the derivative in y
-    abs_sobely = np.absolute(sobely)
-    scaled_sobely = np.uint8(255*abs_sobely/np.max(abs_sobely))
-    return np.sqrt(scaled_sobelx**2+scaled_sobely**2)
+def sobelXY(img):
+    derivativeX_abs = np.absolute(cv2.Scharr(img, cv2.CV_16S, 1, 0))  # Take the s channel derivative in x, CV_16S to have neg value
+    derivativeY_abs = np.absolute(cv2.Scharr(img, cv2.CV_16S, 0, 1))  # Take the s channel derivative in y
+    derivative =derivativeX_abs + derivativeY_abs
+    return derivative
+
+def isNaN(num):
+    return num != num
+
+def isaN(num):
+    return not isNaN(num)
