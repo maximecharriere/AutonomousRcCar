@@ -348,5 +348,7 @@ MigrationBackup/
 
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
-ARC_Code/CameraCalibration/collageGrilles.psd
-Code/CameraCalibration/collageGrilles.psd
+
+# Big PhotoShop files 
+*.psb
+*.psd
