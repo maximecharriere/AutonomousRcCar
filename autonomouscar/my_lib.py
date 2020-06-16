@@ -22,8 +22,24 @@ import matplotlib.pyplot as plt
 import cv2
 import numpy as np
 
-def map(x, in_min, in_max, out_min, out_max):
-    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
+def map(x_in, in_min, in_max, out_min, out_max, limit=False):
+    x_out = (x_in - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
+    if limit:
+        return clamp(x_out, out_min, out_max)
+    else:
+        return x_out
+
+def mix(val1, val2, val1_proportion):
+    val2_proportion = 1-val1_proportion
+    return (val1*val1_proportion + val2*val2_proportion)
+
+def clamp(n, minn, maxn):
+    if n < minn:
+        return minn
+    elif n > maxn:
+        return maxn
+    else:
+        return n
 
 def print_caminfos (camera):
     print("Camera infos:")

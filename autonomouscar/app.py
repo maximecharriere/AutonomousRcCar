@@ -14,6 +14,7 @@
 # -------------------------------- Description --------------------------------
 
 import time
+import math
 from datetime import datetime
 import picamera
 import picamera.array
@@ -39,11 +40,11 @@ lineColor_right = (255,0,0) #bgr
 lineColor_left  = (255,255,0)
 lineColor_rejected = (0,0,255)
 textColor = (0,255,255)
-low_H = 11#175
-low_S = 100
-low_V = 150 #50
-high_H = 30
-high_S = 255
+low_H = 2#175
+low_S = 50
+low_V = 20 #50
+high_H = 60
+high_S = 215
 high_V = 255
 perspectiveWarpPoints = [(896, 920), (1819, 925), (2461, 1800), (262, 1803)]#[(173, 1952), (2560, 1952), (870, 920), (1835, 920)]
 perspectiveWarpPointsResolution = (2592, 1952)
@@ -51,8 +52,7 @@ lineSpacing = 574
 maxSD = 0.002
 SaveFirstFrame = False
 ShowCamPreview = False
-ShowPlot = True
-
+ShowPlot = False
 slop_margin = 0.5
 slop_history = {
     "lastValue": 0.0, 
@@ -168,7 +168,8 @@ def start():
                         print("No line found")
                     else:
                         ## Compute the mean slop of lines
-                        slop = np.mean(allCoef[wantedLines_mask,0])
+                        slop = np.mean(allCoef[wantedLines_mask,0])*-1 #-1 because the slop is reversed
+                        slop_clamped = my_lib.clamp(slop, -1, 1)
                         # Reset history
                         slop_history["lastUpdate"] = 0
                         slop_history["lastValue"] = slop
@@ -186,13 +187,15 @@ def start():
                         else: #no line found
                             raise Exception("No line found. It should not be possible at this point in the code for any line to be found")
                         centerDiff = roadCenter - frameThreshold.shape[1]/2
-                        # print(f"{centerDiff:.4f}")
+                        centerDiff_norm_clamped = my_lib.clamp(centerDiff/(lineSpacing/2),-1,1) #Normalize centerDiff that can be between +-lineSpacing/2 to become between +-1
+                        centerDiff_tan = np.tan(centerDiff_norm_clamped*np.pi/4)
 
 
-                    # # Change steering
-                    # angle = my_lib.map(slop, 1, -1, 35, 65)
-                    # SteeringCtrl.Angle(angle)
-                    # print(f"Slop: {slop}  DiffCentre: {centerDiff:.4f}")
+                    # Change steering
+                    car_steering_norm = my_lib.mix(slop_clamped, centerDiff_tan, np.abs(slop_clamped))
+                    car_steering = my_lib.map(car_steering_norm, -1, 1, 0, 100)
+                    SteeringCtrl.Angle(car_steering)
+                    print(f"slop_clamped: {slop_clamped}   centerDiff_tan: {centerDiff_tan}   car_steering: {car_steering}")
      
         
                 # Reset analised frame

@@ -25,18 +25,18 @@ import picamera
 import picamera.array
 import numpy as np
 import time
-from autonomouscar import camera_calibration, perspective_warp, my_lib
+import camera_calibration, perspective_warp, my_lib
 
 camResolution=(640, 480)
 
 max_value = 255
 max_value_H = 360//2
 
-low_H = 175
-low_S = 100 #70
-low_V = 50
-high_H = 30
-high_S = 255
+low_H = 2#175
+low_S = 50
+low_V = 20 #50
+high_H = 40
+high_S = 215
 high_V = 255
 # low_H = 0
 # high_H = max_value_H
@@ -138,21 +138,22 @@ with picamera.PiCamera(resolution=camResolution, sensor_mode=2) as camera:
         # camera.saturation=100
         # camera.sharpness=0
         ## Let time to the camera for color and exposure calibration 
-        time.sleep(2)  
+        time.sleep(1)  
 
         for frame in camera.capture_continuous(rawCapture , format="bgr", use_video_port=True):
             frameBGR = frame.array
-            frameBGR_calibrate = camera_calibration.undistort(frameBGR, calParamFile="/home/pi/Documents/AutonomousRcCar/autonomouscar/resources/cameraCalibrationParam_V2.pickle",crop=True)
-            frameBGR_warped = perspective_warp.warp(frameBGR_calibrate, perspectiveWarpPoints, [80, 0, 80, 0], perspectiveWarpPointsResolution)
-            frame_HSV = cv.cvtColor(frameBGR_warped, cv.COLOR_BGR2HSV)
-            frame_threshold = my_lib.inRangeHSV(frame_HSV, (low_H, low_S, low_V), (high_H, high_S, high_V))
+            frameBGR_calibrate = camera_calibration.undistort(frameBGR, calParamFile="/home/pi/Documents/AutonomousRcCar/autonomouscar/resources/cameraCalibrationParam_V2.pickle", crop=True)
+            frameBGR_warped = perspective_warp.warp(frameBGR_calibrate, perspectiveWarpPoints, (50,50), [80, 0, 80, 10], perspectiveWarpPointsResolution)
+            frameBGR_warped2 = perspective_warp.warp(frameBGR, perspectiveWarpPoints, (50,50), [80, 0, 80, 10], perspectiveWarpPointsResolution)
+            frameHSV = cv.cvtColor(frameBGR_warped, cv.COLOR_BGR2HSV)
+            frame_threshold = my_lib.inRangeHSV(frameHSV, (low_H, low_S, low_V), (high_H, high_S, high_V))
 
             ## [show]
             cv.imshow(window_capture_name, frameBGR_warped)
             cv.imshow(window_detection_name, frame_threshold)
             ## [show]
 
-            ## [quit]S
+            ## [quit]
             key = cv.waitKey(1)
             if key == ord('q') or key == 27:
                 break
