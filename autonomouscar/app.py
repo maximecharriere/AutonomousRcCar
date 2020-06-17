@@ -41,27 +41,29 @@ lineColor_left  = (255,255,0)
 lineColor_rejected = (0,0,255)
 textColor = (0,255,255)
 low_H = 2#175
-low_S = 50
-low_V = 20 #50
-high_H = 60
+low_S = 60#90
+low_V = 80 #50
+high_H = 40
 high_S = 215
 high_V = 255
 perspectiveWarpPoints = [(896, 920), (1819, 925), (2461, 1800), (262, 1803)]#[(173, 1952), (2560, 1952), (870, 920), (1835, 920)]
 perspectiveWarpPointsResolution = (2592, 1952)
 lineSpacing = 574
-maxSD = 0.002
+maxSD = 0.008
 SaveFirstFrame = False
 ShowCamPreview = False
-ShowPlot = False
+ShowPlot = True
 slop_margin = 0.5
 slop_history = {
     "lastValue": 0.0, 
     "lastUpdate" : 1000
 }
 
+
+
 ## Objects
 SpeedCtrl = SpeedController(PIN_SPEED,5.5,9.5)
-SteeringCtrl = SteeringController(PIN_STEERING, 4, 10)
+SteeringCtrl = SteeringController(PIN_STEERING, 6.5, 9.5)
 
 def start():
     with picamera.PiCamera(resolution=camResolution, sensor_mode=2) as camera:
@@ -84,6 +86,8 @@ def start():
                 camera.capture(
                     f"Images/ConfigCamera/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_cts-{camera.contrast}_DRC-{camera.drc_strength}_sat-{camera.saturation}_sharp-{camera.sharpness}_awbr-{float(camera.awb_gains[0]):.1f}_awbb-{float(camera.awb_gains[1]):.1f}_expMode-{camera.exposure_mode}_expSpeed-{camera.exposure_speed}.jpg")
 
+            slop_clamped  = 0
+            centerDiff_tan = 0
             for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
                 frameBGR = frame.array
                 frameBGR_calibrate = camera_calibration.undistort(
@@ -154,6 +158,7 @@ def start():
                     # Selection of correct lines
                     wantedLines_mask = (stdDeviation<maxSD)
                     if(slop_history["lastUpdate"]<5):
+                        # print(f"allCoef: {allCoef[:,0]}  -->   slop_history: {slop_history['lastValue']}")
                         wantedLines_mask &= (allCoef[:,0]<slop_history["lastValue"]+slop_margin) & (allCoef[:,0]>slop_history["lastValue"]-slop_margin)
                     
                     # Classify left/right lines
@@ -165,10 +170,10 @@ def start():
 
                     if (np.where(wantedLines_mask)[0].size == 0):
                         slop_history["lastUpdate"]+=1
-                        print("No line found")
+                        print(f"No correct line found ({slop_history['lastUpdate']})")
                     else:
                         ## Compute the mean slop of lines
-                        slop = np.mean(allCoef[wantedLines_mask,0])*-1 #-1 because the slop is reversed
+                        slop = np.mean(allCoef[wantedLines_mask,0])
                         slop_clamped = my_lib.clamp(slop, -1, 1)
                         # Reset history
                         slop_history["lastUpdate"] = 0
@@ -192,7 +197,7 @@ def start():
 
 
                     # Change steering
-                    car_steering_norm = my_lib.mix(slop_clamped, centerDiff_tan, np.abs(slop_clamped))
+                    car_steering_norm = my_lib.mix(slop_clamped*-1, centerDiff_tan, np.abs(slop_clamped)) #-1 because the slop is reversed
                     car_steering = my_lib.map(car_steering_norm, -1, 1, 0, 100)
                     SteeringCtrl.Angle(car_steering)
                     print(f"slop_clamped: {slop_clamped}   centerDiff_tan: {centerDiff_tan}   car_steering: {car_steering}")

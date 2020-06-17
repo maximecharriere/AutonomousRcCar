@@ -13,12 +13,14 @@
 #   Read inputs from controller to drive the car
 ## -------------------------------- Description --------------------------------
 
-import sys, getopt, os
-sys.path.append('..')
+import sys, getopt, os,inspect
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.dirname(currentdir)
+sys.path.insert(0,parentdir)
 import asyncio
 from evdev import InputDevice, categorize, ecodes, util
-from autonomouscar import my_lib
-from autonomouscar.pwmcontroller import SteeringController, SpeedController
+import my_lib
+from pwmcontroller import SteeringController, SpeedController
 
 """Pin declaration with BCM format"""
 PIN_SPEED = 18
@@ -55,8 +57,10 @@ async def event_manager(device):
         if event.type == ecodes.EV_ABS:
             if  event.code == ecodes.ABS_X:  #Joy Gauche / Gauche- Droite+
                 SteeringCtrl.Angle(my_lib.map(event.value, 0, 2**16, 0, 100))
+                print("X: ", event.value)
             elif  event.code == ecodes.ABS_Y: #Joy Gauche / Haut- Bas+
                 SpeedCtrl.Speed(my_lib.map(event.value, 0, 2**16, 30, 60))
+                print("Y: ", event.value)
         #    elif event.code == ecodes.ABS_RX: #Joy Droit / Gauche- Droite+
         #        print("Joy Droit / Gauche- Droite+")
         #    elif  event.code == ecodes.ABS_RY: #Joy Droit / Haut- Bas+
