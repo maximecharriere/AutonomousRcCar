@@ -49,7 +49,7 @@ def run_manually(event_filename):
     controller = InputDevice(event_filename)
     loop = asyncio.get_event_loop()
     loop.run_until_complete(event_manager(controller))
-
+    loop.run_in_executor
 async def event_manager(device):
     SpeedCtrl = SpeedController(PIN_SPEED,5.5,9.5)
     SteeringCtrl = SteeringController(PIN_STEERING,5.5,9.5)

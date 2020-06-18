@@ -1,7 +1,7 @@
 import sys
 import RPi.GPIO as GPIO
 
-PWM_PIN = 19
+PWM_PIN = 18
 DUTYCYCLE_STEP = 0.1
 DEFAUT_DUTYCYCLE = 7.5
 PWM_FREQ = 50
