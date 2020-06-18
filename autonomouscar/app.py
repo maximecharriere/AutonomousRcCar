@@ -18,6 +18,8 @@ import math
 from datetime import datetime
 import picamera
 import picamera.array
+import asyncio
+from evdev import InputDevice, categorize, ecodes, util
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
@@ -33,6 +35,11 @@ from scipy import stats
 PIN_SPEED = 18
 PIN_STEERING = 19
 
+CONTROLLER_EVENT_FILENAME = '/dev/input/event0'
+car_speed = 60
+car_running = False
+CAR_SPEED_DELTA = 0.5
+
 # (2592, 1952) and not (2592, 1944) because high must be a multiple of 16
 camResolution = (640, 480)#(2592, 1952)
 min_line_area = 0.1  # in % of img area
@@ -41,27 +48,31 @@ lineColor_left  = (255,255,0)
 lineColor_rejected = (0,0,255)
 textColor = (0,255,255)
 low_H = 2#175
-low_S = 50
-low_V = 20 #50
-high_H = 60
+low_S = 60#90
+low_V = 80 #50
+high_H = 40
 high_S = 215
 high_V = 255
 perspectiveWarpPoints = [(896, 920), (1819, 925), (2461, 1800), (262, 1803)]#[(173, 1952), (2560, 1952), (870, 920), (1835, 920)]
 perspectiveWarpPointsResolution = (2592, 1952)
 lineSpacing = 574
-maxSD = 0.002
+maxSD = 0.008
 SaveFirstFrame = False
 ShowCamPreview = False
-ShowPlot = False
+ShowPlot = True
 slop_margin = 0.5
+SLOP_HISTORY_COUNT = 5
 slop_history = {
     "lastValue": 0.0, 
-    "lastUpdate" : 1000
+    "lastUpdate" : SLOP_HISTORY_COUNT+1
 }
 
+
+
 ## Objects
-SpeedCtrl = SpeedController(PIN_SPEED,5.5,9.5)
-SteeringCtrl = SteeringController(PIN_STEERING, 4, 10)
+SpeedCtrl = SpeedController(PIN_SPEED,5,9)
+SteeringCtrl = SteeringController(PIN_STEERING, 6.5, 9.5)
+Controller = InputDevice(CONTROLLER_EVENT_FILENAME)
 
 def start():
     with picamera.PiCamera(resolution=camResolution, sensor_mode=2) as camera:
@@ -84,10 +95,15 @@ def start():
                 camera.capture(
                     f"Images/ConfigCamera/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_cts-{camera.contrast}_DRC-{camera.drc_strength}_sat-{camera.saturation}_sharp-{camera.sharpness}_awbr-{float(camera.awb_gains[0]):.1f}_awbb-{float(camera.awb_gains[1]):.1f}_expMode-{camera.exposure_mode}_expSpeed-{camera.exposure_speed}.jpg")
 
+            slop_clamped  = 0
+            centerDiff_tan = 0
+
             for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
                 frameBGR = frame.array
                 frameBGR_calibrate = camera_calibration.undistort(
                     frameBGR, calParamFile="/home/pi/Documents/AutonomousRcCar/autonomouscar/resources/cameraCalibrationParam_V2.pickle", crop=True)
+                frameBGR_calibrate_crop = camera_calibration.undistort(
+                    frameBGR, calParamFile="/home/pi/Documents/AutonomousRcCar/autonomouscar/resources/cameraCalibrationParam_V2.pickle", crop=False)
                 frameBGR_warped = perspective_warp.warp(frameBGR_calibrate, perspectiveWarpPoints, (50,50), [80, 0, 80, 10], perspectiveWarpPointsResolution)
                 frameBGR_warped2 = perspective_warp.warp(frameBGR, perspectiveWarpPoints, (50,50), [80, 0, 80, 10], perspectiveWarpPointsResolution)
                 frameHSV = cv2.cvtColor(frameBGR_warped, cv2.COLOR_BGR2HSV)
@@ -153,7 +169,8 @@ def start():
                     
                     # Selection of correct lines
                     wantedLines_mask = (stdDeviation<maxSD)
-                    if(slop_history["lastUpdate"]<5):
+                    if(slop_history["lastUpdate"]<SLOP_HISTORY_COUNT):
+                        # print(f"allCoef: {allCoef[:,0]}  -->   slop_history: {slop_history['lastValue']}")
                         wantedLines_mask &= (allCoef[:,0]<slop_history["lastValue"]+slop_margin) & (allCoef[:,0]>slop_history["lastValue"]-slop_margin)
                     
                     # Classify left/right lines
@@ -165,10 +182,10 @@ def start():
 
                     if (np.where(wantedLines_mask)[0].size == 0):
                         slop_history["lastUpdate"]+=1
-                        print("No line found")
+                        print(f"No correct line found ({slop_history['lastUpdate']})")
                     else:
                         ## Compute the mean slop of lines
-                        slop = np.mean(allCoef[wantedLines_mask,0])*-1 #-1 because the slop is reversed
+                        slop = np.mean(allCoef[wantedLines_mask,0])
                         slop_clamped = my_lib.clamp(slop, -1, 1)
                         # Reset history
                         slop_history["lastUpdate"] = 0
@@ -191,13 +208,41 @@ def start():
                         centerDiff_tan = np.tan(centerDiff_norm_clamped*np.pi/4)
 
 
-                    # Change steering
-                    car_steering_norm = my_lib.mix(slop_clamped, centerDiff_tan, np.abs(slop_clamped))
+                    ## Change steering
+                    car_steering_norm = my_lib.mix(slop_clamped*-1, centerDiff_tan, np.abs(slop_clamped)) #-1 because the slop is reversed
                     car_steering = my_lib.map(car_steering_norm, -1, 1, 0, 100)
                     SteeringCtrl.Angle(car_steering)
-                    print(f"slop_clamped: {slop_clamped}   centerDiff_tan: {centerDiff_tan}   car_steering: {car_steering}")
-     
-        
+                    # print(f"slop_clamped: {slop_clamped}   centerDiff_tan: {centerDiff_tan}   car_steering: {car_steering}")
+
+                    ## Change speed
+                    # Controller input
+                    try:
+                        for event in Controller.read():
+                            if event.type == ecodes.EV_KEY:
+                                if event.value == True:
+                                    if event.code == ecodes.BTN_X:
+                                        if car_running: 
+                                            SpeedCtrl.Stop()
+                                            car_running = False
+                                            print("STOP")
+                                    elif  event.code == ecodes.BTN_A:
+                                        SpeedCtrl.Speed(car_speed)
+                                        car_running = True
+                                        print("RUN")
+                                    elif  event.code == ecodes.ABS_RZ: #Gachette droite
+                                        print("Gachette droite")
+                                    elif  event.code == ecodes.ABS_Z: #Gachette gauche
+                                        print("Gachette gauche")
+                    except BlockingIOError:
+                        pass
+
+                    # Stop if no lines found
+                    if (slop_history["lastUpdate"] >= SLOP_HISTORY_COUNT):
+                        if car_running:
+                            SpeedCtrl.Stop()
+                            car_running = False
+                            print("STOP")
+
                 # Reset analised frame
                 rawCapture.truncate(0)
 
@@ -233,11 +278,13 @@ def start():
                     # Show
                     cv2.namedWindow("Original", cv2.WINDOW_NORMAL)
                     cv2.namedWindow("Calibrate", cv2.WINDOW_NORMAL)
+                    cv2.namedWindow("Calibrate uncrop", cv2.WINDOW_NORMAL)
                     cv2.namedWindow("Warped wo calibration", cv2.WINDOW_NORMAL)
                     cv2.namedWindow("Warped w calibration", cv2.WINDOW_NORMAL)
                     cv2.namedWindow("Polyfit", cv2.WINDOW_NORMAL)
                     cv2.imshow("Original", frameBGR)
                     cv2.imshow("Calibrate", frameBGR_calibrate)
+                    cv2.imshow("Calibrate uncrop", frameBGR_calibrate_crop)
                     cv2.imshow("Warped wo calibration", frameBGR_warped2)
                     cv2.imshow("Warped w calibration", frameBGR_warped)
                     cv2.imshow("Polyfit", coloredImg)
@@ -253,3 +300,5 @@ def start():
 
 if __name__ == '__main__':
     start()
+
+

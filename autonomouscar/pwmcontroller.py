@@ -16,6 +16,7 @@
 
 import RPi.GPIO as GPIO
 import my_lib
+import time
 
 class _PwmController:
     def __init__(self, pin, minPercent, maxPercent):
@@ -24,6 +25,7 @@ class _PwmController:
         self.MinPercent = minPercent
         self.MaxPercent = maxPercent
         self.NeutralPercent = (maxPercent+minPercent)/2
+        self.DutyCycle = self.NeutralPercent
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(pin,GPIO.OUT)
         self.PwmObj = GPIO.PWM(pin , self.PWM_FREQ)
@@ -32,9 +34,6 @@ class _PwmController:
 class SteeringController(_PwmController):
     def __init__(self, pin, minPercent, maxPercent):
         _PwmController.__init__(self,pin, minPercent, maxPercent)
-
-    def Forward(self):
-        self.PwmObj.ChangeDutyCycle(self.NeutralPercent)
 
     def Angle(self, percent):
         """Set the current wheel angle
@@ -45,15 +44,22 @@ class SteeringController(_PwmController):
             percent = 0
         elif(percent>100):
             percent = 100
-        self.PwmObj.ChangeDutyCycle(my_lib.map(percent,0,100,self.MaxPercent,self.MinPercent))
+        self.DutyCycle = my_lib.map(percent,0,100,self.MaxPercent,self.MinPercent)
+        self.PwmObj.ChangeDutyCycle(self.DutyCycle)
 
 
 class SpeedController(_PwmController):
     def __init__(self, pin, minPercent, maxPercent):
         _PwmController.__init__(self,pin, minPercent, maxPercent)
+        self.isStopped = True
 
     def Stop(self):
-        self.PwmObj.ChangeDutyCycle(self.NeutralPercent)
+        self.PwmObj.ChangeDutyCycle(5.0)
+        time.sleep(0.5)
+        self.DutyCycle = self.NeutralPercent
+        print(self.DutyCycle)
+        self.PwmObj.ChangeDutyCycle(self.DutyCycle)
+        self.isStopped = True
 
     def Speed(self, percent):
         """Set the actual speed of the car
@@ -64,5 +70,8 @@ class SpeedController(_PwmController):
             percent = 0
         elif(percent>100):
             percent = 100
-        self.PwmObj.ChangeDutyCycle(my_lib.map(percent,0,100,self.MaxPercent,self.MinPercent))
+        self.DutyCycle = my_lib.map(percent,0,100,self.MinPercent,self.MaxPercent)
+        print(self.DutyCycle)
+        self.PwmObj.ChangeDutyCycle(self.DutyCycle)
+        self.isStopped = False
 

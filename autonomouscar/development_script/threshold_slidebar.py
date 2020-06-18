@@ -16,8 +16,10 @@
 ## -------------------------------- Description --------------------------------
 from __future__ import print_function
 
-import sys
-sys.path.append('..')
+import sys, getopt, os,inspect
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.dirname(currentdir)
+sys.path.insert(0,parentdir)
 
 import cv2 as cv
 import argparse
@@ -33,8 +35,8 @@ max_value = 255
 max_value_H = 360//2
 
 low_H = 2#175
-low_S = 50
-low_V = 20 #50
+low_S = 90
+low_V = 80 #50
 high_H = 40
 high_S = 215
 high_V = 255
