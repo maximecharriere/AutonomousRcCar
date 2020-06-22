@@ -64,7 +64,10 @@ class HardPWM(_PwmInterface):
     chippath = "/sys/class/pwm/pwmchip0"
     def __init__(self,BCMpin, freq):
         _PwmInterface.__init__(self,BCMpin,freq)
-        self.pwm_num = pwm_BCM2number[self.BCMpin]
+        try:
+            self.pwm_num = pwm_BCM2number[self.BCMpin]
+        except KeyError:
+            raise KeyError(f"Hardware PWM are valid on pins {pwm_BCM2number}")
         self.pwmdir=f"{self.chippath}/pwm{self.pwm_num}"
         if not self._overlay_loaded():
             raise HardPWMException("Need to add 'dtoverlay=pwm-2chan' to /boot/config.txt and reboot") 
@@ -87,6 +90,7 @@ class HardPWM(_PwmInterface):
     def set_duty_cycle(self,milliseconds):
         self.duty_cycle = milliseconds
         dutycycle_ns = int(self.duty_cycle * 1000000) #in ns
+        print(dutycycle_ns)
         dutycycle_file = f"{self.pwmdir}/duty_cycle"
         self._sudo_echo(dutycycle_ns,dutycycle_file)    
 
@@ -124,7 +128,7 @@ if __name__ == "__main__":
     from time import sleep
     import numpy as np
     FREQ=50 
-    PIN = 19
+    PIN = 11
     start=1.2
     end=1.8
     pwm = HardPWM(PIN, FREQ)
@@ -132,4 +136,7 @@ if __name__ == "__main__":
     pwm.enable()  
     for dc in np.linspace(start, end, num=100, endpoint=True):
         pwm.set_duty_cycle(dc)
-        sleep(0.1)
+        sleep(0.05)
+    for dc in np.linspace(end, start, num=100, endpoint=True):
+        pwm.set_duty_cycle(dc)
+        sleep(0.05)

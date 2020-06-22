@@ -14,59 +14,60 @@
 #   RC car
 ## -------------------------------- Description --------------------------------
 
-from hardpwm import HardPWM
-import my_lib
+import my_lib, my_pwm
 import time
 
+PWM_FREQ = 50
+
 class _PwmController:
-    def __init__(self, pin, minDutyCycle, maxDutyCycle):
+    def __init__(self, pin, minDutyCycle, maxDutyCycle, hardware):
         '''
             pin: pin number of the PWM output given with the BCM format (generaly 18 and 19)
-            minDutyCycle: time that the edge have to be 1 to be at the min position
-            maxDutyCycle: time that the edge have to be 1 to be at the max position
+            minDutyCycle: time that the edge have to be 1 to be at the min position (in ms)
+            maxDutyCycle: time that the edge have to be 1 to be at the max position (in ms)
         '''
-        self.PWM_FREQ = 50
-        self.Pin = pin
         self.MinDutyCycle = minDutyCycle
         self.MaxDutyCycle = maxDutyCycle
         self.NeutralDutyCycle = (minDutyCycle+maxDutyCycle)/2
-        self.DutyCycle = self.NeutralDutyCycle
-        self.PwmObj = HardPWM(pin)
-        self.PwmObj.set_frequency(self.PWM_FREQ)
-        self.PwmObj.set_duty_cycle(self.DutyCycle)
-        self.PwmObj.enable()  
+        if (hardware):
+            self.pwm_ctrl= my_pwm.HardPWM(pin, PWM_FREQ)
+        else:
+            self.pwm_ctrl= my_pwm.SoftPWM(pin, PWM_FREQ)
+
+        self.pwm_ctrl.set_duty_cycle(self.NeutralDutyCycle)
+        self.pwm_ctrl.enable()  
+
 
 class SteeringController(_PwmController):
-    def __init__(self, pin, minDutyCycle, maxDutyCycle):
-        _PwmController.__init__(self,pin, minDutyCycle, maxDutyCycle)
+    def __init__(self, pin, minDutyCycle, maxDutyCycle, hardware=False):
+        _PwmController.__init__(self,pin, minDutyCycle, maxDutyCycle, hardware)
 
     def Angle(self, angle):
         """Set the current wheel angle
         -1   = MAX LEFT
         0  = FORWARD
         1 = MAX RIGHT"""
-        self.DutyCycle = my_lib.map(angle,-1,1,self.MinDutyCycle,self.MaxDutyCycle,limit=True)
-        self.PwmObj.set_duty_cycle(self.DutyCycle)
+        self.pwm_ctrl.set_duty_cycle(my_lib.map(angle,-1,1,self.MinDutyCycle,self.MaxDutyCycle,limit=True))
 
 
 class SpeedController(_PwmController):
-    def __init__(self, pin, minDutyCycle, maxDutyCycle):
-        _PwmController.__init__(self,pin, minDutyCycle, maxDutyCycle)
+    def __init__(self, pin, minDutyCycle, maxDutyCycle, hardware=False):
+        _PwmController.__init__(self,pin, minDutyCycle, maxDutyCycle, hardware)
 
     def Stop(self):
-        if (self.DutyCycle > self.NeutralDutyCycle): #if the car go forward, do an emergency stop
-            self.PwmObj.set_duty_cycle(1)
-            time.sleep(0.5)
-        self.DutyCycle = self.NeutralDutyCycle
-        self.PwmObj.set_duty_cycle(self.DutyCycle)
+        #on my car, if it goes forward and I put the min dutycycle on the motor controller,
+        #the car don't go backward, but do and emergency stop
+        if (self.pwm_ctrl.duty_cycle > self.NeutralDutyCycle):
+            self.pwm_ctrl.set_duty_cycle(self.MinDutyCycle)
+            time.sleep(0.3) #wait the car to be stopped
+        self.pwm_ctrl.set_duty_cycle(self.NeutralDutyCycle)
 
     def Speed(self, speed):
         """Set the actual speed of the car
         -1   = MAX SPEED BACKWARD
         0  = STOP
         1 = MAX SPEED FORWARD"""
-        self.DutyCycle = my_lib.map(speed,-1,1,self.MinDutyCycle,self.MaxDutyCycle,limit=True)
-        self.PwmObj.set_duty_cycle(self.DutyCycle)
+        self.pwm_ctrl.set_duty_cycle(my_lib.map(speed,-1,1,self.MinDutyCycle,self.MaxDutyCycle,limit=True))
 
 
 if __name__ == "__main__":
@@ -75,7 +76,7 @@ if __name__ == "__main__":
     import numpy as np
 
     print("Testing of steering controller")
-    SteeringCtrl = SteeringController(pin=19, minDutyCycle=1.0, maxDutyCycle=2.0)
+    SteeringCtrl = SteeringController(pin=19, minDutyCycle=1.2, maxDutyCycle=1.8, hardware=True)
     print("right > left")
     for angle in np.linspace(-1, 1, num=100, endpoint=True):
         SteeringCtrl.Angle(angle)
@@ -93,16 +94,18 @@ if __name__ == "__main__":
     for i in range(5):
         print("!!!!! WARNING : THE CAR GOING TO MOVE FAST !!!!!")
         sleep(1)
-    SpeedCtrl = SpeedController(pin=18, minDutyCycle=1.0, maxDutyCycle=2.0)
+    SpeedCtrl = SpeedController(pin=18, minDutyCycle=1.2, maxDutyCycle=1.8, hardware=True)
     print("Forward")
     for speed in np.linspace(0, 1, num=50, endpoint=True):
         SpeedCtrl.Speed(speed)
+        print(f"    {speed}")
         sleep(0.05)
     print("\nStop")
     SpeedCtrl.Stop()
     print("\nBackward")
     for speed in np.linspace(0, -1, num=50, endpoint=True):
         SpeedCtrl.Speed(speed)
+        print(f"    {speed}")
         sleep(0.05)
     print("\nStop")
     SpeedCtrl.Stop()
