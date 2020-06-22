@@ -1,16 +1,19 @@
-import sys
-import RPi.GPIO as GPIO
+import sys, getopt, os,inspect
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.dirname(currentdir)
+sys.path.insert(0,parentdir)
+from hardpwm import HardPWM
 
-PWM_PIN = 18
-DUTYCYCLE_STEP = 0.1
-DEFAUT_DUTYCYCLE = 7.5
+PWM_PIN = 19
+DUTYCYCLE_STEP = 0.05
+DEFAUT_DUTYCYCLE = 1.5
 PWM_FREQ = 50
 
 def main(argv):
-    GPIO.setmode(GPIO.BCM)
-    GPIO.setup(PWM_PIN, GPIO.OUT)
-    pwm_obj = GPIO.PWM(PWM_PIN , PWM_FREQ)
-    pwm_obj.start(DEFAUT_DUTYCYCLE)
+    pwm_obj = HardPWM(PWM_PIN)
+    pwm_obj.set_frequency(PWM_FREQ)
+    pwm_obj.set_duty_cycle(DEFAUT_DUTYCYCLE)
+    pwm_obj.enable() 
     
     print("Commands:")
     print("  w:  Increase duty cycle")
@@ -30,7 +33,7 @@ def main(argv):
         elif char == 'm':
             dutycycle = float(input("Dutycycle: "))
 
-        pwm_obj.ChangeDutyCycle(dutycycle)
+        pwm_obj.set_duty_cycle(dutycycle)
         print(f"Dutycycle: {dutycycle}")
 
   

@@ -26,7 +26,7 @@ import matplotlib.pyplot as plt
 import my_lib
 import camera_calibration
 import perspective_warp
-from pwmcontroller import SteeringController, SpeedController
+from pwmcontroller_hard import SteeringController, SpeedController
 from scipy import stats
 
 # Parameters
@@ -70,8 +70,8 @@ slop_history = {
 
 
 ## Objects
-SpeedCtrl = SpeedController(PIN_SPEED,5,9)
-SteeringCtrl = SteeringController(PIN_STEERING, 6.5, 9.5)
+SpeedCtrl = SpeedController(PIN_SPEED,1.2,1.8)
+SteeringCtrl = SteeringController(PIN_STEERING, 1.2, 1.8)
 Controller = InputDevice(CONTROLLER_EVENT_FILENAME)
 
 def start():

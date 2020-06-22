@@ -15,11 +15,17 @@
 ## -------------------------------- Description --------------------------------
 
 import RPi.GPIO as GPIO
+from hardpwm import SysPWM
 import my_lib
 import time
 
 class _PwmController:
     def __init__(self, pin, minPercent, maxPercent):
+        '''
+            pin: pin number of the PWM output given with the BCM format (generaly 18 and 19)
+            minPercent: percentage of the periode that the edge have to be 1 to be at the min position
+            maxPercent: percentage of the periode that the edge have to be 1 to be at the max position
+        '''
         self.PWM_FREQ = 50
         self.Pin = pin
         self.MinPercent = minPercent
