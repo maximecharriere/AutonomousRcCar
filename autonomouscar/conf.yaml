@@ -1,0 +1,57 @@
+PIN: # Pin declaration with BCM format
+    pwm_speed: 18
+    pwm_steering: 19
+    proximity_sensor: ~
+
+CAMERA:
+    save_raw: False
+    save_raw_location: "Images/ConfigCamera/"
+    resolution: [640, 480]
+    awb: True
+    awb_gains: ~
+    contrast: ~
+    saturation: ~
+    sharpness: ~
+
+IMAGE_PROCESSING:
+    calibration:
+        param_file: "resources/cameraCalibrationParam_V2.pickle"
+    perspective_warp:
+        points_resolution: [2592, 1952] #in px
+        points: #in px
+            - [896, 920]
+            - [1819, 925]
+            - [2461, 1800]
+            - [262, 1803]
+        realworld_line_distance: [50,50] #[width, high] in cm
+        warp_margin: [80, 0, 80, 10] #[left, top, right, bottom] in % of the base image
+    hsv_threshold:
+        low: [2,60,80] # [h,s,v]
+        high: [40,215,255]
+    line_filtering: 
+        min_area: 0.1 # in % of img area
+        max_SD: 0.008 #standard deviation
+        slop_margin: 0.5
+        history_size: 5
+    line_spacing: 574
+
+CAR:
+    speed: 0.29
+    speed_pwm_dc_min: 1.2
+    speed_pwm_dc_max: 1.8
+    steering_pwm_dc_min: 1.2
+    steering_pwm_dc_max: 1.8
+
+CONTROLLER:
+    event_filename: '/dev/input/event0'
+    btn_start: "BTN_A" #List of inputs can be found in "linux/input.h" source code
+    btn_stop: "BTN_X"
+
+DISPLAY:
+    show_plots: False
+    show_cam_preview: False
+    linecolor_right: [255,0,0] #bgr
+    lineColor_left: [255,255,0] #bgr
+    lineColor_rejected: [0,0,255] #bgr
+    textColor: [0,255,255] #bgr
+

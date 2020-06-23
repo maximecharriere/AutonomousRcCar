@@ -22,9 +22,10 @@ PWM_FREQ = 50
 class _PwmController:
     def __init__(self, pin, minDutyCycle, maxDutyCycle, hardware):
         '''
-            pin: pin number of the PWM output given with the BCM format (generaly 18 and 19)
-            minDutyCycle: time that the edge have to be 1 to be at the min position (in ms)
-            maxDutyCycle: time that the edge have to be 1 to be at the max position (in ms)
+            pin (int): pin number of the PWM output given with the BCM format (generaly 18 and 19)
+            minDutyCycle (double): time that the edge have to be 1 to be at the min position (in ms)
+            maxDutyCycle (double): time that the edge have to be 1 to be at the max position (in ms)
+            hardware (bool): generate a hardware or software pwm
         '''
         self.MinDutyCycle = minDutyCycle
         self.MaxDutyCycle = maxDutyCycle
@@ -58,7 +59,7 @@ class SpeedController(_PwmController):
         #on my car, if it goes forward and I put the min dutycycle on the motor controller,
         #the car don't go backward, but do and emergency stop
         if (self.pwm_ctrl.duty_cycle > self.NeutralDutyCycle):
-            self.pwm_ctrl.set_duty_cycle(self.MinDutyCycle)
+            self.pwm_ctrl.set_duty_cycle(1)
             time.sleep(0.3) #wait the car to be stopped
         self.pwm_ctrl.set_duty_cycle(self.NeutralDutyCycle)
 

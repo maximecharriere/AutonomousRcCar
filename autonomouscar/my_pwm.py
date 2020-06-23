@@ -67,10 +67,10 @@ class HardPWM(_PwmInterface):
         try:
             self.pwm_num = pwm_BCM2number[self.BCMpin]
         except KeyError:
-            raise KeyError(f"Hardware PWM are valid on pins {pwm_BCM2number}")
+            raise KeyError(f"Hardware PWM are only valid on pins {[key for key in pwm_BCM2number.keys()]}")
         self.pwmdir=f"{self.chippath}/pwm{self.pwm_num}"
         if not self._overlay_loaded():
-            raise HardPWMException("Need to add 'dtoverlay=pwm-2chan' to /boot/config.txt and reboot") 
+            raise HardPWMException("Need to add 'dtoverlay=pwm-2chan' to /boot/config.txt and reboot to enable PWM") 
         self._create_pwmX()
         self.set_frequency(self.freq)
         return
@@ -90,7 +90,6 @@ class HardPWM(_PwmInterface):
     def set_duty_cycle(self,milliseconds):
         self.duty_cycle = milliseconds
         dutycycle_ns = int(self.duty_cycle * 1000000) #in ns
-        print(dutycycle_ns)
         dutycycle_file = f"{self.pwmdir}/duty_cycle"
         self._sudo_echo(dutycycle_ns,dutycycle_file)    
 

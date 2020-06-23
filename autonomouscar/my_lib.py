@@ -92,16 +92,18 @@ def plt_show_all_colorspace(img):
     plt.show()
 
 def inRangeHSV(src, lowerb, upperb):
+    lowerb = np.array(lowerb)
+    upperb = np.array(upperb)
     if not (len(src.shape) == 3):
         raise ValueError("The source must be a 3D matrix")
     if not (src.shape[2] == len(lowerb) == len(upperb) == 3):
         raise ValueError("Parameters must have 3 channels")
     
-    h_max = 180
-    h_min = 0
     if (lowerb[0] <= upperb[0]):
         return cv2.inRange(src, lowerb, upperb)
     else:
+        h_max = 180
+        h_min = 0
         mask1 = cv2.inRange(src, lowerb, (h_max, upperb[1], upperb[2]))
         mask2 = cv2.inRange(src, (h_min, lowerb[1], lowerb[2]), upperb)
         return mask1 | mask2

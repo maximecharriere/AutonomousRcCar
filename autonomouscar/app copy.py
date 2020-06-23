@@ -28,43 +28,71 @@ import camera_calibration
 import perspective_warp
 from pwmcontroller import SteeringController, SpeedController
 from scipy import stats
-import yaml
 
-# Load configuration file
-with open('conf.yaml') as fd:
-    conf = yaml.load(fd, Loader=yaml.FullLoader)
+# Parameters
+
+# Pin declaration with BCM format
+PIN_SPEED = 18
+PIN_STEERING = 19
+
+CONTROLLER_EVENT_FILENAME = '/dev/input/event0'
+car_speed = 60
+car_running = False
+
+# (2592, 1952) and not (2592, 1944) because high must be a multiple of 16
+camResolution = [640, 480]#(2592, 1952)
+min_line_area = 0.1  # in % of img area
+lineColor_right = [255,0,0] #bgr
+lineColor_left  = [255,255,0]
+lineColor_rejected = [0,0,255]
+textColor = [0,255,255]
+low_H = 2#175
+low_S = 60#90
+low_V = 80 #50
+high_H = 40
+high_S = 215
+high_V = 255
+perspectiveWarpPoints = [[896, 920], [1819, 925], [2461, 1800], [262, 1803]]#[(173, 1952), (2560, 1952), (870, 920), (1835, 920)]
+perspectiveWarpPointsResolution = [2592, 1952]
+lineSpacing = 574
+maxSD = 0.008
+SaveFirstFrame = False
+ShowCamPreview = False
+ShowPlot = True
+slop_margin = 0.5
+SLOP_HISTORY_COUNT = 5
+slop_history = {
+    "lastValue": 0.0, 
+    "lastUpdate" : SLOP_HISTORY_COUNT+1
+}
+
 
 
 ## Objects
-SpeedCtrl = SpeedController(conf["PIN"]["pwm_speed"], conf["CAR"]["speed_pwm_dc_min"],conf["CAR"]["speed_pwm_dc_max"], hardware=True)
-SteeringCtrl = SteeringController(conf["PIN"]["pwm_steering"], conf["CAR"]["steering_pwm_dc_min"],conf["CAR"]["steering_pwm_dc_max"], hardware=True)
-Controller = InputDevice(conf["CONTROLLER"]["event_filename"])
+SpeedCtrl = SpeedController(PIN_SPEED,1.2,1.8, hardware=True)
+SteeringCtrl = SteeringController(PIN_STEERING, 1.2, 1.8, hardware=True)
+Controller = InputDevice(CONTROLLER_EVENT_FILENAME)
 
 def start():
-    car_running = False
-    slop_history = {
-        "lastValue": 0.0, 
-        "lastUpdate" : conf["IMAGE_PROCESSING"]["line_filtering"]["history_size"]+1
-    }
-
-    with picamera.PiCamera(resolution=conf["CAMERA"]["resolution"], sensor_mode=2) as camera:
-        with picamera.array.PiRGBArray(camera, size=conf["CAMERA"]["resolution"]) as rawCapture:
-            if not conf["CAMERA"]["awb"]: camera.awb_mode = 'off'
-            if conf["CAMERA"]["awb_gains"]: camera.awb_gains = conf["CAMERA"]["awb_gains"]
-            if conf["CAMERA"]["contrast"]: camera.contrast = conf["CAMERA"]["contrast"]
-            if conf["CAMERA"]["saturation"]: camera.saturation = conf["CAMERA"]["saturation"]
-            if conf["CAMERA"]["sharpness"]: camera.sharpness = conf["CAMERA"]["sharpness"]
+    with picamera.PiCamera(resolution=camResolution, sensor_mode=2) as camera:
+        with picamera.array.PiRGBArray(camera, size=camResolution) as rawCapture:
+            # (bg, rg) = camera.awb_gains
+            # camera.awb_mode = 'off'
+            # camera.awb_gains = (1, 211/128)
+            # camera.contrast=50
+            # camera.saturation=100
+            # camera.sharpness=0
             # Let time to the camera for color and exposure calibration
             time.sleep(1)
 
             # Preview
-            if conf["DISPLAY"]["show_cam_preview"]:
+            if ShowCamPreview:
                 camera.start_preview()
 
             # Save the picture with camera parameters in filename
-            if conf["CAMERA"]["save_raw"]:
+            if SaveFirstFrame:
                 camera.capture(
-                    conf["CAMERA"]["save_raw_location"] + f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_cts-{camera.contrast}_DRC-{camera.drc_strength}_sat-{camera.saturation}_sharp-{camera.sharpness}_awbr-{float(camera.awb_gains[0]):.1f}_awbb-{float(camera.awb_gains[1]):.1f}_expMode-{camera.exposure_mode}_expSpeed-{camera.exposure_speed}.jpg")
+                    f"Images/ConfigCamera/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_cts-{camera.contrast}_DRC-{camera.drc_strength}_sat-{camera.saturation}_sharp-{camera.sharpness}_awbr-{float(camera.awb_gains[0]):.1f}_awbb-{float(camera.awb_gains[1]):.1f}_expMode-{camera.exposure_mode}_expSpeed-{camera.exposure_speed}.jpg")
 
             slop_clamped  = 0
             centerDiff_tan = 0
@@ -72,23 +100,15 @@ def start():
             for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
                 frameBGR = frame.array
                 frameBGR_calibrate = camera_calibration.undistort(
-                    img = frameBGR, 
-                    calParamFile = conf["IMAGE_PROCESSING"]["calibration"]["param_file"], 
-                    crop = True)
-                frameBGR_calibrate_crop = camera_calibration.undistort(img=frameBGR, calParamFile=conf["IMAGE_PROCESSING"]["calibration"]["param_file"], crop=False)
-                frameBGR_warped = perspective_warp.warp(
-                    img = frameBGR_calibrate, 
-                    imgPoints = conf["IMAGE_PROCESSING"]["perspective_warp"]["points"], 
-                    realWorldPointsDistance = conf["IMAGE_PROCESSING"]["perspective_warp"]["realworld_line_distance"], 
-                    margin_pc = conf["IMAGE_PROCESSING"]["perspective_warp"]["warp_margin"], 
-                    refImageResolution = conf["IMAGE_PROCESSING"]["perspective_warp"]["points_resolution"])
+                    frameBGR, calParamFile="/home/pi/Documents/AutonomousRcCar/autonomouscar/resources/cameraCalibrationParam_V2.pickle", crop=True)
+                frameBGR_calibrate_crop = camera_calibration.undistort(
+                    frameBGR, calParamFile="/home/pi/Documents/AutonomousRcCar/autonomouscar/resources/cameraCalibrationParam_V2.pickle", crop=False)
+                frameBGR_warped = perspective_warp.warp(frameBGR_calibrate, perspectiveWarpPoints, (50,50), [80, 0, 80, 10], perspectiveWarpPointsResolution)
+                frameBGR_warped2 = perspective_warp.warp(frameBGR, perspectiveWarpPoints, (50,50), [80, 0, 80, 10], perspectiveWarpPointsResolution)
                 frameHSV = cv2.cvtColor(frameBGR_warped, cv2.COLOR_BGR2HSV)
 
                 # Threshold
-                frameThreshold = my_lib.inRangeHSV(
-                    src = frameHSV, 
-                    lowerb = conf["IMAGE_PROCESSING"]["hsv_threshold"]["low"], 
-                    upperb = conf["IMAGE_PROCESSING"]["hsv_threshold"]["high"])
+                frameThreshold = my_lib.inRangeHSV(frameHSV, (low_H, low_S, low_V), (high_H, high_S, high_V))
                 # frameThreshold = cv2.morphologyEx(frameThreshold, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15,15)))
                 # to minimise the number of components and speed processing time (à mesurer)
                 # frameThreshold = cv2.erode(frameThreshold, kernel=np.ones((3, 3)))
@@ -120,7 +140,7 @@ def start():
                     frameThreshold, ltype=cv2.CV_16U)  # https://docs.opencv.org/master/d3/dc0/group__imgproc__shape.html
                 # the "1" is to exclude label 0 who is the background
                 line_label = np.where(
-                    blobStats[1:, cv2.CC_STAT_AREA] >= conf["IMAGE_PROCESSING"]["line_filtering"]["min_area"]*frameThreshold.size/100)[0]+1
+                    blobStats[1:, cv2.CC_STAT_AREA] >= min_line_area*frameThreshold.size/100)[0]+1
 
                 if (line_label.size == 0):
                     slop_history["lastUpdate"]+=1
@@ -147,9 +167,10 @@ def start():
                     stdDeviation = np.array(stdDeviation)
                     
                     # Selection of correct lines
-                    wantedLines_mask = (stdDeviation < conf["IMAGE_PROCESSING"]["line_filtering"]["max_SD"])
-                    if(slop_history["lastUpdate"] < conf["IMAGE_PROCESSING"]["line_filtering"]["history_size"]):
-                        wantedLines_mask &= (allCoef[:,0]<slop_history["lastValue"]+conf["IMAGE_PROCESSING"]["line_filtering"]["slop_margin"]) & (allCoef[:,0]>slop_history["lastValue"]-conf["IMAGE_PROCESSING"]["line_filtering"]["slop_margin"])
+                    wantedLines_mask = (stdDeviation<maxSD)
+                    if(slop_history["lastUpdate"]<SLOP_HISTORY_COUNT):
+                        # print(f"allCoef: {allCoef[:,0]}  -->   slop_history: {slop_history['lastValue']}")
+                        wantedLines_mask &= (allCoef[:,0]<slop_history["lastValue"]+slop_margin) & (allCoef[:,0]>slop_history["lastValue"]-slop_margin)
                     
                     # Classify left/right lines
                     bottom = frameThreshold.shape[0]
@@ -176,52 +197,57 @@ def start():
                         if  my_lib.isaN(leftLine_bottom_intercept) and my_lib.isaN(rightLine_bottom_intercept): #both line found
                             roadCenter = np.mean((leftLine_bottom_intercept, rightLine_bottom_intercept))
                         elif my_lib.isaN(leftLine_bottom_intercept): #left line found
-                            roadCenter = leftLine_bottom_intercept + conf["IMAGE_PROCESSING"]["line_spacing"]/2
+                            roadCenter = leftLine_bottom_intercept + lineSpacing/2
                         elif my_lib.isaN(rightLine_bottom_intercept): #right line found
-                            roadCenter = rightLine_bottom_intercept - conf["IMAGE_PROCESSING"]["line_spacing"]/2
+                            roadCenter = rightLine_bottom_intercept - lineSpacing/2
                         else: #no line found
                             raise Exception("No line found. It should not be possible at this point in the code for any line to be found")
-                        centerDiff = frameThreshold.shape[1]/2 - roadCenter
-                        centerDiff_norm_clamped = my_lib.clamp(centerDiff/(conf["IMAGE_PROCESSING"]["line_spacing"]/2),-1,1) #Normalize centerDiff that can be between +-lineSpacing/2 to become between +-1
+                        centerDiff = roadCenter - frameThreshold.shape[1]/2
+                        centerDiff_norm_clamped = my_lib.clamp(centerDiff/(lineSpacing/2),-1,1) #Normalize centerDiff that can be between +-lineSpacing/2 to become between +-1
                         centerDiff_tan = np.tan(centerDiff_norm_clamped*np.pi/4)
 
 
                     ## Change steering
-                    car_steering_norm = my_lib.mix(slop_clamped, centerDiff_tan, np.abs(slop_clamped))
-                    SteeringCtrl.Angle(car_steering_norm)
+                    car_steering_norm = my_lib.mix(slop_clamped*-1, centerDiff_tan, np.abs(slop_clamped)) #-1 because the slop is reversed
+                    car_steering = my_lib.map(car_steering_norm, -1, 1, 0, 100)
+                    SteeringCtrl.Angle(car_steering)
                     # print(f"slop_clamped: {slop_clamped}   centerDiff_tan: {centerDiff_tan}   car_steering: {car_steering}")
 
-                ## Change speed
-                # Controller input
-                try:
-                    for event in Controller.read():
-                        if event.type == ecodes.EV_KEY:
-                            if event.value == True:
-                                if event.code == ecodes.ecodes[conf["CONTROLLER"]["btn_stop"]]: 
-                                    if car_running: 
-                                        SpeedCtrl.Stop()
-                                        car_running = False
-                                        print("STOP")
-                                elif  event.code == ecodes.ecodes[conf["CONTROLLER"]["btn_start"]]:
-                                    SpeedCtrl.Speed(conf["CAR"]["speed"])
-                                    car_running = True
-                                    print("RUN")
-                except BlockingIOError:
-                    pass
+                    ## Change speed
+                    # Controller input
+                    try:
+                        for event in Controller.read():
+                            if event.type == ecodes.EV_KEY:
+                                if event.value == True:
+                                    if event.code == ecodes.BTN_X:
+                                        if car_running: 
+                                            SpeedCtrl.Stop()
+                                            car_running = False
+                                            print("STOP")
+                                    elif  event.code == ecodes.BTN_A:
+                                        SpeedCtrl.Speed(car_speed)
+                                        car_running = True
+                                        print("RUN")
+                                    elif  event.code == ecodes.ABS_RZ: #Gachette droite
+                                        print("Gachette droite")
+                                    elif  event.code == ecodes.ABS_Z: #Gachette gauche
+                                        print("Gachette gauche")
+                    except BlockingIOError:
+                        pass
 
-                # Stop if no lines found
-                if (slop_history["lastUpdate"] >= conf["IMAGE_PROCESSING"]["line_filtering"]["history_size"]):
-                    if car_running:
-                        SpeedCtrl.Stop()
-                        car_running = False
-                        print("STOP")
+                    # Stop if no lines found
+                    if (slop_history["lastUpdate"] >= SLOP_HISTORY_COUNT):
+                        if car_running:
+                            SpeedCtrl.Stop()
+                            car_running = False
+                            print("STOP")
 
                 # Reset analised frame
                 rawCapture.truncate(0)
 
                 # Show result with plots
-                if conf["DISPLAY"]["show_plots"]:
-                    # Generate image with different color for each connected component
+                if ShowPlot:
+                    # Generate image with different color for each label
                     labelizedThreshold = np.zeros_like(frameThreshold)
                     if (line_label.size > 0):
                         colorStep = int(255/line_label.size)
@@ -238,25 +264,27 @@ def start():
                         draw_points = (np.asarray([draw_x, draw_y]).T).astype(np.int32)
                         # Draw line
                         if rightLines_mask[i]:
-                            lineColor = conf["DISPLAY"]["linecolor_right"]
+                            lineColor = lineColor_right
                         elif leftLines_mask[i]:
-                            lineColor = conf["DISPLAY"]["lineColor_left"]
+                            lineColor = lineColor_left
                         else:
-                            lineColor = conf["DISPLAY"]["lineColor_rejected"]
+                            lineColor = lineColor_rejected
                         cv2.polylines(coloredImg, [draw_points], False, lineColor, 5)
                         # Draw text
                         textOrg = (blobStats[line_label[i],cv2.CC_STAT_LEFT] + int(blobStats[line_label[i],cv2.CC_STAT_WIDTH]/2), blobStats[line_label[i],cv2.CC_STAT_TOP] + int(blobStats[line_label[i],cv2.CC_STAT_HEIGHT]/2))
-                        coloredImg = cv2.putText(coloredImg,f"SD = {stdDeviation[i]:.4f}",textOrg, cv2.FONT_HERSHEY_SIMPLEX, 1, conf["DISPLAY"]["textColor"], 2)
+                        coloredImg = cv2.putText(coloredImg,f"SD = {stdDeviation[i]:.4f}",textOrg, cv2.FONT_HERSHEY_SIMPLEX, 1, textColor, 2)
 
                     # Show
                     cv2.namedWindow("Original", cv2.WINDOW_NORMAL)
                     cv2.namedWindow("Calibrate", cv2.WINDOW_NORMAL)
                     cv2.namedWindow("Calibrate uncrop", cv2.WINDOW_NORMAL)
+                    cv2.namedWindow("Warped wo calibration", cv2.WINDOW_NORMAL)
                     cv2.namedWindow("Warped w calibration", cv2.WINDOW_NORMAL)
                     cv2.namedWindow("Polyfit", cv2.WINDOW_NORMAL)
                     cv2.imshow("Original", frameBGR)
                     cv2.imshow("Calibrate", frameBGR_calibrate)
                     cv2.imshow("Calibrate uncrop", frameBGR_calibrate_crop)
+                    cv2.imshow("Warped wo calibration", frameBGR_warped2)
                     cv2.imshow("Warped w calibration", frameBGR_warped)
                     cv2.imshow("Polyfit", coloredImg)
 
