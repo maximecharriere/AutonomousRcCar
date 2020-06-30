@@ -69,20 +69,20 @@ def start():
             slop_clamped  = 0
             centerDiff_tan = 0
 
-            for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
-                frameBGR = frame.array
-                frameBGR_calibrate = camera_calibration.undistort(
-                    img = frameBGR, 
+            for frame in camera.capture_continuous(rawCapture, format="rgb", use_video_port=True): #we can directly take a bgr format, so we don't have to make a colorconversion when we want to show images with OpenCV, but RGB is the standard and deep learning model are trained with RGB images
+                frameRGB = frame.array
+                frameRGB_calibrate = camera_calibration.undistort(
+                    img = frameRGB, 
                     calParamFile = conf["IMAGE_PROCESSING"]["calibration"]["param_file"], 
                     crop = True)
-                frameBGR_calibrate_crop = camera_calibration.undistort(img=frameBGR, calParamFile=conf["IMAGE_PROCESSING"]["calibration"]["param_file"], crop=False)
-                frameBGR_warped = perspective_warp.warp(
-                    img = frameBGR_calibrate, 
+                frameRGB_calibrate_crop = camera_calibration.undistort(img=frameRGB, calParamFile=conf["IMAGE_PROCESSING"]["calibration"]["param_file"], crop=False)
+                frameRGB_warped = perspective_warp.warp(
+                    img = frameRGB_calibrate, 
                     imgPoints = conf["IMAGE_PROCESSING"]["perspective_warp"]["points"], 
                     realWorldPointsDistance = conf["IMAGE_PROCESSING"]["perspective_warp"]["realworld_line_distance"], 
                     margin_pc = conf["IMAGE_PROCESSING"]["perspective_warp"]["warp_margin"], 
                     refImageResolution = conf["IMAGE_PROCESSING"]["perspective_warp"]["points_resolution"])
-                frameHSV = cv2.cvtColor(frameBGR_warped, cv2.COLOR_BGR2HSV)
+                frameHSV = cv2.cvtColor(frameRGB_warped, cv2.COLOR_RGB2HSV)
 
                 # Threshold
                 frameThreshold = my_lib.inRangeHSV(
@@ -254,11 +254,11 @@ def start():
                     cv2.namedWindow("Calibrate uncrop", cv2.WINDOW_NORMAL)
                     cv2.namedWindow("Warped w calibration", cv2.WINDOW_NORMAL)
                     cv2.namedWindow("Polyfit", cv2.WINDOW_NORMAL)
-                    cv2.imshow("Original", frameBGR)
-                    cv2.imshow("Calibrate", frameBGR_calibrate)
-                    cv2.imshow("Calibrate uncrop", frameBGR_calibrate_crop)
-                    cv2.imshow("Warped w calibration", frameBGR_warped)
-                    cv2.imshow("Polyfit", coloredImg)
+                    cv2.imshow("Original", cv2.cvtColor(frameRGB, cv2.COLOR_RGB2BGR))
+                    cv2.imshow("Calibrate", cv2.cvtColor(frameRGB_calibrate, cv2.COLOR_RGB2BGR))
+                    cv2.imshow("Calibrate uncrop", cv2.cvtColor(frameRGB_calibrate_crop, cv2.COLOR_RGB2BGR))
+                    cv2.imshow("Warped w calibration", cv2.cvtColor(frameRGB_warped, cv2.COLOR_RGB2BGR))
+                    cv2.imshow("Polyfit", cv2.cvtColor(coloredImg, cv2.COLOR_RGB2BGR))
 
                     # Quit
                     key = cv2.waitKey(1)

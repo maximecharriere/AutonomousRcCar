@@ -13,7 +13,7 @@ def dc2pc(freq, dutycycle):
     return 100/period*dutycycle
 
 
-class _PwmInterface():
+class _PwmInterface(object):
     def __init__(self,BCMpin, freq):
         self.BCMpin = BCMpin
         self.freq = freq #in Hz
