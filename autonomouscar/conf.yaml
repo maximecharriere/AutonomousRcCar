@@ -7,6 +7,8 @@ CAMERA:
     save_raw: False
     save_raw_location: "Images/ConfigCamera/"
     resolution: [640, 480]
+    #[300,300]
+    #[640, 480]
     awb: True
     awb_gains: ~
     contrast: ~
