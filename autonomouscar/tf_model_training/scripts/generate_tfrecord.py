@@ -2,6 +2,11 @@
 Code by David Tian
 https://github.com/dctian/DeepPiCar/blob/master/models/object_detection/code/generate_tfrecord.py
 
+Line flags = tf.compat.v1.app.flags
+Line tf.compat.v1.app.run() 
+Line writer = tf.io.TFRecordWriter(FLAGS.output_path)
+are modified to be compatible with tf2 
+
 Usage:
 # Create train data:
 python generate_tfrecord.py --label=<LABEL> --csv_input=<PATH_TO_ANNOTATIONS_FOLDER>/train_labels.csv  --output_path=<PATH_TO_ANNOTATIONS_FOLDER>/train.record <PATH_TO_ANNOTATIONS_FOLDER>/label_map.pbtxt
@@ -25,7 +30,7 @@ from PIL import Image
 from object_detection.utils import dataset_util
 from collections import namedtuple, OrderedDict
 
-flags = tf.app.flags
+flags = tf.compat.v1.app.flags #modified
 flags.DEFINE_string("csv_input", "", "Path to the CSV input")
 flags.DEFINE_string("output_path", "", "Path to output TFRecord")
 flags.DEFINE_string(
@@ -51,7 +56,7 @@ def split(df, group):
 
 
 def create_tf_example(group, path, label_map):
-    with tf.gfile.GFile(os.path.join(path, "{}".format(group.filename)), "rb") as fid:
+    with tf.io.gfile.GFile(os.path.join(path, "{}".format(group.filename)), "rb") as fid:
         encoded_jpg = fid.read()
     encoded_jpg_io = io.BytesIO(encoded_jpg)
     image = Image.open(encoded_jpg_io)
@@ -105,7 +110,7 @@ def create_tf_example(group, path, label_map):
 
 
 def main(_):
-    writer = tf.python_io.TFRecordWriter(FLAGS.output_path)
+    writer = tf.io.TFRecordWriter(FLAGS.output_path) #modified
     path = os.path.join(os.getcwd(), FLAGS.img_path)
     examples = pd.read_csv(FLAGS.csv_input)
 
@@ -132,4 +137,4 @@ def main(_):
 
 
 if __name__ == "__main__":
-    tf.app.run()
+    tf.compat.v1.app.run() #modified
