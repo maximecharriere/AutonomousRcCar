@@ -27,7 +27,7 @@ import random
 import xml.etree.ElementTree as ET
 
 
-def iterate_dir(source, dest, ratio, copy_xml):
+def iterate_dir(source, dest, ratio, copy_xml, shuffle_seed):
     source = source.replace('\\', '/')
     dest = dest.replace('\\', '/')
     train_dir = os.path.join(dest, 'train')
@@ -43,7 +43,8 @@ def iterate_dir(source, dest, ratio, copy_xml):
 
     num_images = len(images)
     num_test_images = math.ceil(ratio*num_images)
-
+    random.seed(shuffle_seed)
+    
     for i in range(num_test_images):
         idx = random.randint(0, len(images)-1)
         filename = images[idx]
@@ -92,13 +93,19 @@ def main():
         help='Set this flag if you want the xml annotation files to be processed and copied over.',
         action='store_true'
     )
+    parser.add_argument(
+        '-s', '--seed',
+        help='Set the seed to randomly shuffle dataset. If None (default) is set, current time is taken',
+        default=None,
+        type=int
+    )
     args = parser.parse_args()
 
     if args.outputDir is None:
         args.outputDir = args.imageDir
 
     # Now we are ready to start the iteration
-    iterate_dir(args.imageDir, args.outputDir, args.ratio, args.xml)
+    iterate_dir(args.imageDir, args.outputDir, args.ratio, args.xml, args.seed)
 
 
 if __name__ == '__main__':
