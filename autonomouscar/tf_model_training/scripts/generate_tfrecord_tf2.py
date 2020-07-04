@@ -1,11 +1,7 @@
 """
-Code by David Tian
-https://github.com/dctian/DeepPiCar/blob/master/models/object_detection/code/generate_tfrecord.py
+Code from the object-detection-api-tutorial (modified for tf2 compatibility)
+https://tensorflow-object-detection-api-tutorial.readthedocs.io/en/latest/training.html#creating-tensorflow-records
 
-Line flags = tf.compat.v1.app.flags
-Line tf.compat.v1.app.run() 
-Line writer = tf.io.TFRecordWriter(FLAGS.output_path)
-are modified to be compatible with tf2 
 
 Usage:
 # Create train data:
@@ -30,7 +26,7 @@ from PIL import Image
 from object_detection.utils import dataset_util
 from collections import namedtuple, OrderedDict
 
-flags = tf.compat.v1.app.flags #modified
+flags = tf.compat.v1.app.flags #modified for tf2
 flags.DEFINE_string("csv_input", "", "Path to the CSV input")
 flags.DEFINE_string("output_path", "", "Path to output TFRecord")
 flags.DEFINE_string(
@@ -110,7 +106,7 @@ def create_tf_example(group, path, label_map):
 
 
 def main(_):
-    writer = tf.io.TFRecordWriter(FLAGS.output_path) #modified
+    writer = tf.io.TFRecordWriter(FLAGS.output_path) #modified for tf2
     path = os.path.join(os.getcwd(), FLAGS.img_path)
     examples = pd.read_csv(FLAGS.csv_input)
 
@@ -137,4 +133,4 @@ def main(_):
 
 
 if __name__ == "__main__":
-    tf.compat.v1.app.run() #modified
+    tf.compat.v1.app.run() #modified for tf2
