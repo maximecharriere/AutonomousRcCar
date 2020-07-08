@@ -4,16 +4,18 @@ PIN: # Pin declaration with BCM format
     proximity_sensor: ~
 
 CAMERA:
-    save_raw: False
-    save_raw_location: "Images/ConfigCamera/"
-    resolution: [640, 480]
-    #[300,300]
-    #[640, 480]
-    awb: True
-    awb_gains: ~
-    contrast: ~
-    saturation: ~
-    sharpness: ~
+    parameters:
+        resolution: [640, 480]
+        framerate: ~
+        awb_mode: 'auto'
+        awb_gains: ~
+        exposure_mode: 'auto'
+        exposure_speed: ~
+        iso: ~
+        brightness: ~
+        contrast: ~
+        saturation: ~
+        sharpness: ~
 
 IMAGE_PROCESSING:
     calibration:
@@ -43,6 +45,7 @@ CAR:
     speed_pwm_dc_max: 1.8
     steering_pwm_dc_min: 1.2
     steering_pwm_dc_max: 1.8
+    default_speed_limit: 25
 
 CONTROLLER:
     event_filename: '/dev/input/event0'

@@ -26,51 +26,36 @@ import matplotlib.pyplot as plt
 import my_lib
 import camera_calibration
 import perspective_warp
-from pwmcontroller import SteeringController, SpeedController
+from car import Car
 from scipy import stats
 import yaml
 
-# Load configuration file
-with open('conf.yaml') as fd:
-    conf = yaml.load(fd, Loader=yaml.FullLoader)
 
+class AutonomousCarApp():
+    def __init__(self, conf_fname):
+        # Load configuration file
+        self.conf = my_lib.load_configuration(conf_fname)
 
-## Objects
-SpeedCtrl = SpeedController(conf["PIN"]["pwm_speed"], conf["CAR"]["speed_pwm_dc_min"],conf["CAR"]["speed_pwm_dc_max"], hardware=True)
-SteeringCtrl = SteeringController(conf["PIN"]["pwm_steering"], conf["CAR"]["steering_pwm_dc_min"],conf["CAR"]["steering_pwm_dc_max"], hardware=True)
-Controller = InputDevice(conf["CONTROLLER"]["event_filename"])
+        #Objects
+        self.Car = Car(self.conf)
+        self.Controller = InputDevice(self.conf["CONTROLLER"]["event_filename"])
+        self.ImgRectifier = ImgRectifier(conf["IMAGE_PROCESSING"]["calibration"]["param_file"], self.Car.Camera.resolution)
 
 def start():
+    # Start a fullscreen preview
+    if conf["DISPLAY"]["show_cam_preview"]:
+        camera.start_preview()
     car_running = False
     slop_history = {
         "lastValue": 0.0, 
         "lastUpdate" : conf["IMAGE_PROCESSING"]["line_filtering"]["history_size"]+1
     }
-
-    with picamera.PiCamera(resolution=conf["CAMERA"]["resolution"], sensor_mode=2) as camera:
-        with picamera.array.PiRGBArray(camera, size=conf["CAMERA"]["resolution"]) as rawCapture:
-            if not conf["CAMERA"]["awb"]: camera.awb_mode = 'off'
-            if conf["CAMERA"]["awb_gains"]: camera.awb_gains = conf["CAMERA"]["awb_gains"]
-            if conf["CAMERA"]["contrast"]: camera.contrast = conf["CAMERA"]["contrast"]
-            if conf["CAMERA"]["saturation"]: camera.saturation = conf["CAMERA"]["saturation"]
-            if conf["CAMERA"]["sharpness"]: camera.sharpness = conf["CAMERA"]["sharpness"]
-            # Let time to the camera for color and exposure calibration
-            time.sleep(1)
-
-            # Preview
-            if conf["DISPLAY"]["show_cam_preview"]:
-                camera.start_preview()
-
-            # Save the picture with camera parameters in filename
-            if conf["CAMERA"]["save_raw"]:
-                camera.capture(
-                    conf["CAMERA"]["save_raw_location"] + f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_cts-{camera.contrast}_DRC-{camera.drc_strength}_sat-{camera.saturation}_sharp-{camera.sharpness}_awbr-{float(camera.awb_gains[0]):.1f}_awbb-{float(camera.awb_gains[1]):.1f}_expMode-{camera.exposure_mode}_expSpeed-{camera.exposure_speed}.jpg")
+    while True:
+        self.Car.Camera.capture_np()
 
             slop_clamped  = 0
             centerDiff_tan = 0
 
-            for frame in camera.capture_continuous(rawCapture, format="rgb", use_video_port=True): #we can directly take a bgr format, so we don't have to make a colorconversion when we want to show images with OpenCV, but RGB is the standard and deep learning model are trained with RGB images
-                frameRGB = frame.array
                 frameRGB_calibrate = camera_calibration.undistort(
                     img = frameRGB, 
                     calParamFile = conf["IMAGE_PROCESSING"]["calibration"]["param_file"], 

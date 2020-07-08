@@ -21,6 +21,13 @@ import picamera
 import matplotlib.pyplot as plt
 import cv2
 import numpy as np
+import yaml
+
+def load_configuration(conf_file):
+    # Load configuration file
+    with open(conf_file) as fd:
+        conf = yaml.load(fd, Loader=yaml.FullLoader)
+    return conf
 
 def map(x_in, in_min, in_max, out_min, out_max, limit=False):
     x_out = (x_in - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
