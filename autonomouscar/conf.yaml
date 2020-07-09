@@ -1,7 +1,8 @@
 PIN: # Pin declaration with BCM format
     pwm_speed: 18
     pwm_steering: 19
-    proximity_sensor: ~
+    proximity_trigger: 23
+    proximity_echo: 24
 
 CAMERA:
     parameters:

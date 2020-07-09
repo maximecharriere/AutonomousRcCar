@@ -21,7 +21,7 @@ class PicameraController(PiCamera):
 		
 		# initialize the camera
 		PiCamera.__init__(self, camera_num, stereo_mode, stereo_decimate, resolution, framerate, sensor_mode, led_pin, clock_mode, framerate_range)
-
+		
 		# set camera parameters (refer to PiCamera docs)
 		for (arg, value) in cam_param_dict:
 			setattr(self, arg, value)
@@ -32,7 +32,7 @@ class PicameraController(PiCamera):
 		# 	format="rgb", use_video_port=True)
 		# initialize the frame and the variable used to indicate
 		# if the thread should be stopped
-		self.frame = None
+		self.frame_np = None
 		# self.stopped = False
 
 	# def start(self):
@@ -48,9 +48,9 @@ class PicameraController(PiCamera):
 
 	def capture_np(self):
 		self.capture(self.rawCapture, format="rgb", use_video_port=True)
-		self.frame = self.rawCapture.array
+		self.frame_np = self.rawCapture.array
 		self.rawCapture.truncate()
-		return self.frame
+		return self.frame_np
 
 	def stop(self):
 		# indicate that the thread should be stopped

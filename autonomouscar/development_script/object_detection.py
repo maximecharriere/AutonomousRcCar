@@ -60,8 +60,8 @@ def main():
         conf = yaml.load(fd, Loader=yaml.FullLoader)
 
     # Initialize engine.
-    engine = DetectionEngine("/home/pi/Documents/AutonomousRcCar/autonomouscar/resources/mobilenet_v2_quantized/mobilenet_v2_1.0_224_quantized_1_default_1.tflite")
-    labels = dataset_utils.read_label_file("/home/pi/Documents/AutonomousRcCar/autonomouscar/resources/mobilenet_v2_quantized/imagenet_labels.txt")
+    engine = DetectionEngine("/home/pi/Documents/AutonomousRcCar/autonomouscar/resources/mobilenet_v2_quantized/ssd_mobilenet_v2_coco_quant_postprocess_edgetpu.tflite")
+    labels = dataset_utils.read_label_file("/home/pi/Documents/AutonomousRcCar/autonomouscar/resources/mobilenet_v2_quantized/coco_labels.txt")
 
     with picamera.PiCamera(resolution=conf["CAMERA"]["resolution"], sensor_mode=2) as camera:
         with picamera.array.PiRGBArray(camera, size=conf["CAMERA"]["resolution"]) as rawCapture:
@@ -72,7 +72,7 @@ def main():
                     img = img, 
                     calParamFile = conf["IMAGE_PROCESSING"]["calibration"]["param_file"], 
                     crop = True)
-                img = img[:480, -480:, :]
+                # img = img[:480, -480:, :]
                 # Run inference.
                 objs = engine.detect_with_image(Image.fromarray(img), keep_aspect_ratio =False, relative_coord=False,threshold=0.2,top_k=10)
 
