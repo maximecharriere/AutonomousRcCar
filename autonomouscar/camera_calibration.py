@@ -48,4 +48,4 @@ class ImgRectifier():
                 generate the file.")
 
     def undistort(self, img, crop = True):
-        return cv2.undistort(img, self.mtx, self.dist, None, self.mtx_new if crop else None)
+        return cv2.undistort(img, self.mtx, self.dist, None, None if crop else self.mtx_new)

@@ -9,8 +9,12 @@ class UltrasonicSensor():
         self.pin_trigger = pin_trigger
         self.pin_echo = pin_echo
         #set GPIO direction (IN / OUT)
+        GPIO.setmode(GPIO.BCM)
         GPIO.setup(self.pin_trigger, GPIO.OUT)
         GPIO.setup(self.pin_echo, GPIO.IN)
+
+    def __del__(self):
+        GPIO.cleanup()
 
 
     def getDistance(self):

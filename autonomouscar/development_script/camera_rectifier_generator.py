@@ -73,4 +73,4 @@ if __name__ == '__main__':
         patternSize   = parser.pattern_size, 
         imgDirectory  = parser.img_directory, 
         calParamFile  = parser.output_fname, 
-        saveDrawedImg = parser.save_drawing):
+        saveDrawedImg = parser.save_drawing)

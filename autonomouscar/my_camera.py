@@ -44,12 +44,12 @@ class PicameraController(PiCamera):
 
 	# def read(self):
 	# 	# return the frame most recently read
-	# 	return self.frame
+	# 	return self.frames
 
 	def capture_np(self):
 		self.capture(self.rawCapture, format="rgb", use_video_port=True)
 		self.frame_np = self.rawCapture.array
-		self.rawCapture.truncate()
+		self.rawCapture.truncate(0)
 		return self.frame_np
 
 	def stop(self):

@@ -25,111 +25,101 @@ import cv2
 import matplotlib.pyplot as plt
 import my_lib
 from camera_calibration import ImgRectifier
-from perspective_warp import ImgWarper
 from road_follower import RoadFollower
 from car import Car
 from scipy import stats
 
+CONFIG_FNAME = '/home/pi/Documents/AutonomousRcCar/autonomouscar/conf.yaml'
 
 class AutonomousCarApp():
     def __init__(self, conf_fname):
         # Load configuration file
         self.conf = my_lib.load_configuration(conf_fname)
-        self.speed_infos = {
-            'speed_limit' : self.conf["CAR"]["default_speed_limit"],
-            'car_stopped' : False
+        self.speed_limit = self.conf["CAR"]["default_speed_limit"]
+        self.stop_flags = {
+            'no_road'     : True,
+            'stop_sign'   : False,
+            'red_light'   : False,
+            'obstacle'    : True,
+            'manual_stop' : True
         }
+        self.stop_flags_history = self.stop_flags
         #Objects
         self.car = Car(self.conf)
-        self.controller = InputDevice(self.conf["CONTROLLER"]["event_filename"])
         self.imgRectifier = ImgRectifier(
             imgShape = self.car.camera.resolution,
             calParamFile = self.conf["IMAGE_PROCESSING"]["calibration"]["param_file"])
         self.roadFollower = RoadFollower(
             imgShape = self.car.camera.resolution, 
             conf = self.conf)
+        try:
+            self.controller = InputDevice(self.conf["CONTROLLER"]["event_filename"])
+        except FileNotFoundError:
+            self.controller = None
+            print("A wrong gamepad event filename is provided or the gamepad is not connected !")
+            self.stop_flags['manual_stop'] = False
         
-
     def start(self):
         # Start a fullscreen raw preview
-        if conf["DISPLAY"]["show_cam_preview"]:
+        if self.conf["DISPLAY"]["show_cam_preview"]:
             self.car.camera.start_preview()
         
         while True:
+            StartTime = time.time()
             img = self.car.camera.capture_np()
-            img = self.imgRectifier.undistort(img)
-            steering_value = self.roadFollower.getSteering(img)
-            self.car.steeringCtrl.angle(steering_value)
+            # img = self.imgRectifier.undistort(img)
+            steering_value, img_polyfit  = self.roadFollower.getSteering(img, draw_result= self.conf["DISPLAY"]["show_plots"])
+            if (steering_value): self.car.steeringCtrl.angle(steering_value)
 
-            ## Change speed
+            # Check if no lines is found from a long time
+            self.stop_flags['no_road'] = (self.roadFollower.slop_history['lastUpdate'] > self.conf["IMAGE_PROCESSING"]["line_filtering"]["history_size"])
+            
             # Controller input
-            try:
-                for event in self.controller.read():
-                    if event.type == ecodes.EV_KEY:
-                        if event.value == True:
-                            if event.code == ecodes.ecodes[conf["CONTROLLER"]["btn_stop"]]: 
-                                if car_running: 
-                                    car_running = False
-                                    print("STOP")
-                            elif  event.code == ecodes.ecodes[conf["CONTROLLER"]["btn_start"]]:
-                                car_running = True
-                                print("RUN")
-            except BlockingIOError:
-                pass
+            if self.controller:
+                try:
+                    for event in self.controller.read():
+                        if event.type == ecodes.EV_KEY:
+                            if event.value == True:
+                                if event.code == ecodes.ecodes[self.conf["CONTROLLER"]["btn_stop"]]: 
+                                    self.stop_flags['manual_stop'] = True
+                                elif  event.code == ecodes.ecodes[self.conf["CONTROLLER"]["btn_start"]]:
+                                    self.stop_flags['manual_stop'] = False
+                except BlockingIOError:
+                    pass
             
-            
+            # Check that there are no obstacles in front of the car
+            self.stop_flags['obstacle'] = ( self.car.ultrasonicSensor.getDistance()< self.conf['PROXIMITY']['min_distance'])
 
-                # # Show result with plots
-                # if conf["DISPLAY"]["show_plots"]:
-                #     # Generate image with different color for each connected component
-                #     labelizedThreshold = np.zeros_like(frameThreshold)
-                #     if (line_label.size > 0):
-                #         colorStep = int(255/line_label.size)
-                #         for i in range(line_label.size):
-                #             labelizedThreshold[np.where(
-                #                 labels_img == line_label[i])] = colorStep*(i+1)
+            ## Car speed
+            if (self.stop_flags_history != self.stop_flags):
+                self.stop_flags_history = self.stop_flags
+                if (any(self.stop_flags.values())):
+                    self.car.speedCtrl.stop()
+                else:
+                    self.car.speedCtrl.speed(my_lib.map(self.speed_limit, 0,100,0,1))
 
-                #     # Draw polyfit
-                #     coloredImg = np.dstack((labelizedThreshold, labelizedThreshold, labelizedThreshold))
-                #     draw_y = np.linspace(0, frameThreshold.shape[0]-1, frameThreshold.shape[0], dtype=int)
-                #     for i in range(line_label.size): 
-                #         # Compute points
-                #         draw_x = np.polyval(allCoef[i,:], draw_y)
-                #         draw_points = (np.asarray([draw_x, draw_y]).T).astype(np.int32)
-                #         # Draw line
-                #         if rightLines_mask[i]:
-                #             lineColor = conf["DISPLAY"]["linecolor_right"]
-                #         elif leftLines_mask[i]:
-                #             lineColor = conf["DISPLAY"]["lineColor_left"]
-                #         else:
-                #             lineColor = conf["DISPLAY"]["lineColor_rejected"]
-                #         cv2.polylines(coloredImg, [draw_points], False, lineColor, 5)
-                #         # Draw text
-                #         textOrg = (blobStats[line_label[i],cv2.CC_STAT_LEFT] + int(blobStats[line_label[i],cv2.CC_STAT_WIDTH]/2), blobStats[line_label[i],cv2.CC_STAT_TOP] + int(blobStats[line_label[i],cv2.CC_STAT_HEIGHT]/2))
-                #         coloredImg = cv2.putText(coloredImg,f"SD = {stdDeviation[i]:.4f}",textOrg, cv2.FONT_HERSHEY_SIMPLEX, 1, conf["DISPLAY"]["textColor"], 2)
 
-                #     # Show
-                #     cv2.namedWindow("Original", cv2.WINDOW_NORMAL)
-                #     cv2.namedWindow("Calibrate", cv2.WINDOW_NORMAL)
-                #     cv2.namedWindow("Calibrate uncrop", cv2.WINDOW_NORMAL)
-                #     cv2.namedWindow("Warped w calibration", cv2.WINDOW_NORMAL)
-                #     cv2.namedWindow("Polyfit", cv2.WINDOW_NORMAL)
-                #     cv2.imshow("Original", cv2.cvtColor(frameRGB, cv2.COLOR_RGB2BGR))
-                #     cv2.imshow("Calibrate", cv2.cvtColor(frameRGB_calibrate, cv2.COLOR_RGB2BGR))
-                #     cv2.imshow("Calibrate uncrop", cv2.cvtColor(frameRGB_calibrate_crop, cv2.COLOR_RGB2BGR))
-                #     cv2.imshow("Warped w calibration", cv2.cvtColor(frameRGB_warped, cv2.COLOR_RGB2BGR))
-                #     cv2.imshow("Polyfit", cv2.cvtColor(coloredImg, cv2.COLOR_RGB2BGR))
+            # Show result with plots
+            if self.conf["DISPLAY"]["show_plots"]:
+                # Show
+                cv2.namedWindow("Original", cv2.WINDOW_NORMAL)
+                cv2.namedWindow("Polyfit", cv2.WINDOW_NORMAL)
+                cv2.imshow("Original", cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
+                cv2.imshow("Polyfit", cv2.cvtColor(img_polyfit, cv2.COLOR_RGB2BGR))
 
-                #     # Quit
-                #     key = cv2.waitKey(1)
-                #     if key == ord("q"):
-                #         break
+            # Quit
+            key = cv2.waitKey(1)
+            if key == ord("q"):
+                break
+            StopTime = time.time()
+            print(1/(StopTime-StartTime))
 
         # Close properly
         self.car.camera.stop_preview()
         cv2.destroyAllWindows()
 
 if __name__ == '__main__':
-    start()
+    app = AutonomousCarApp(CONFIG_FNAME)
+    app.start()
 
 

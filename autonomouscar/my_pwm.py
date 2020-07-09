@@ -29,7 +29,7 @@ class _IPwm():
 
     def disable(self):
         '''Disable the PWM output'''
-
+        
     def set_duty_cycle(self,milliseconds):
         '''Set the dutycycle of the PWM
         He must be smaller than the PWM period (1/freq)'''
