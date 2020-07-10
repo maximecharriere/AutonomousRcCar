@@ -1,7 +1,7 @@
 from actuator_controller import SteeringController, SpeedController
 from my_camera import PicameraController
 from ultrasonic_sensor_controller import UltrasonicSensor
-
+import time 
 class Car():
     def __init__(self, conf):
         self.speedCtrl = SpeedController(
@@ -26,5 +26,7 @@ class Car():
     def start(self):
         self.steeringCtrl.startPwm()
         self.speedCtrl.startPwm()
+        self.camera.startThread()
+        time.sleep(0.2) #waiting that all start
         
         

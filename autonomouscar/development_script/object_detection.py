@@ -47,51 +47,52 @@ sys.path.insert(0,parentdir)
 from edgetpu.detection.engine import DetectionEngine
 from edgetpu.utils import dataset_utils, image_processing
 import yaml
-import picamera
-import picamera.array
 import cv2
 import time
 from PIL import Image
-import camera_calibration
+from my_camera import PicameraController
+from camera_calibration import ImgRectifier
 import numpy as np
 
 def main():
     with open('conf.yaml') as fd:
         conf = yaml.load(fd, Loader=yaml.FullLoader)
 
+    camera = PicameraController(
+            cam_param_dict = [(arg, value) for (arg, value) in conf['CAMERA']['parameters'].items() if value != None]
+        )
+    camera.startThread()
+
+    imgRectifier = ImgRectifier(
+            imgShape = camera.resolution,
+            calParamFile = conf["IMAGE_PROCESSING"]["calibration"]["param_file"])
+
     # Initialize engine.
-    engine = DetectionEngine("/home/pi/Documents/AutonomousRcCar/autonomouscar/resources/mobilenet_v2_quantized/ssd_mobilenet_v2_coco_quant_postprocess_edgetpu.tflite")
-    labels = dataset_utils.read_label_file("/home/pi/Documents/AutonomousRcCar/autonomouscar/resources/mobilenet_v2_quantized/coco_labels.txt")
+    engine = DetectionEngine("/home/pi/Documents/AutonomousRcCar/autonomouscar/resources/model_quantized_edgetpu.tflite")
+    labels = dataset_utils.read_label_file("/home/pi/Documents/AutonomousRcCar/autonomouscar/resources/sign_label.txt")
 
-    with picamera.PiCamera(resolution=conf["CAMERA"]["resolution"], sensor_mode=2) as camera:
-        with picamera.array.PiRGBArray(camera, size=conf["CAMERA"]["resolution"]) as rawCapture:
-            time.sleep(1)
-            for frame in camera.capture_continuous(rawCapture, format="rgb", use_video_port=True):
-                img = frame.array
-                img = camera_calibration.undistort(
-                    img = img, 
-                    calParamFile = conf["IMAGE_PROCESSING"]["calibration"]["param_file"], 
-                    crop = True)
-                # img = img[:480, -480:, :]
-                # Run inference.
-                objs = engine.detect_with_image(Image.fromarray(img), keep_aspect_ratio =False, relative_coord=False,threshold=0.2,top_k=10)
+    while True:
+        img = camera.current_frame
+        img =imgRectifier.undistort(img)
+        # img = img[:480, -480:, :]
+        # Run inference.
+        objs = engine.detect_with_image(Image.fromarray(img), keep_aspect_ratio =False, relative_coord=False,threshold=0.2,top_k=10)
 
-                # Print and draw detected objects.
-                for obj in objs:
-                    if labels:
-                        cv2.rectangle(img,tuple(obj.bounding_box[0].astype(int)),tuple(obj.bounding_box[1].astype(int)),color=(255,0,0))
-                        cv2.putText(img, f"{labels[obj.label_id]} ({obj.score*100:.0f}%)",tuple(obj.bounding_box[0].astype(int)-(70,0)),cv2.FONT_HERSHEY_SIMPLEX, 0.5, conf["DISPLAY"]["textColor"], 1)
-                if not objs:
-                    print('No objects detected.')
+        # Print and draw detected objects.
+        for obj in objs:
+            if labels:
+                cv2.rectangle(img,tuple(obj.bounding_box[0].astype(int)),tuple(obj.bounding_box[1].astype(int)),color=(255,0,0))
+                cv2.putText(img, f"{labels[obj.label_id]} ({obj.score*100:.0f}%)",tuple(obj.bounding_box[0].astype(int)-(70,0)),cv2.FONT_HERSHEY_SIMPLEX, 0.5, conf["DISPLAY"]["textColor"], 1)
+        if not objs:
+            print('No objects detected.')
 
-                cv2.namedWindow("Objects", cv2.WINDOW_NORMAL)
-                cv2.imshow("Objects", cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
+        cv2.namedWindow("Objects", cv2.WINDOW_NORMAL)
+        cv2.imshow("Objects", cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
 
-                rawCapture.truncate(0)
-                # Quit
-                key = cv2.waitKey(1)
-                if key == ord("q"):
-                    break
+        # Quit
+        key = cv2.waitKey(1)
+        if key == ord("q"):
+            break
 
 if __name__ == '__main__':
   main()

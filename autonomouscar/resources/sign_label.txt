@@ -1,0 +1,5 @@
+battery
+speed25
+speed50
+stop
+traffic light

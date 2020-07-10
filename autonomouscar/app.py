@@ -60,15 +60,28 @@ class AutonomousCarApp():
             self.stop_flags['manual_stop'] = False
         
     def start(self):
+        self.car.start()
+        import threading
+        print(threading.enumerate())
         # Start a fullscreen raw preview
         if self.conf["DISPLAY"]["show_cam_preview"]:
             self.car.camera.start_preview()
         
+        # img = self.car.camera.capture_np()
+        # img = self.imgRectifier.undistort(img)
+        i = 0
+        time_histo = np.zeros(10, dtype=float)
         while True:
+            
             StartTime = time.time()
-            img = self.car.camera.capture_np()
-            # img = self.imgRectifier.undistort(img)
+            img = self.car.camera.current_frame
+            img = self.imgRectifier.undistort(img)
+            # FPS
+            StopTime = time.time()
+            
+
             steering_value, img_polyfit  = self.roadFollower.getSteering(img, draw_result= self.conf["DISPLAY"]["show_plots"])
+            
             if (steering_value): self.car.steeringCtrl.angle(steering_value)
 
             # Check if no lines is found from a long time
@@ -111,8 +124,16 @@ class AutonomousCarApp():
             key = cv2.waitKey(1)
             if key == ord("q"):
                 break
-            StopTime = time.time()
-            print(1/(StopTime-StartTime))
+            
+
+            ## TIMER
+            time_histo[i] = 1000*(StopTime-StartTime)
+            i += 1
+            if i==10:
+                i = 0
+                print(time_histo.mean())
+
+
 
         # Close properly
         self.car.camera.stop_preview()

@@ -2,6 +2,8 @@ import my_lib
 import cv2
 from perspective_warp import ImgWarper
 import numpy as np
+import time 
+from scipy import stats
 
 class RoadFollower():
     def __init__(self, imgShape, conf):
@@ -27,37 +29,56 @@ class RoadFollower():
             If None, no line is found in img
 
         '''
+        
+
         car_steering_norm = None
         drawed_result = None
 
         # Transform the image to see it from above
         img_warped = self.imgWarper.warp(img)
+        
+        
+
         # Apply a threshold on the HSV values of the image
         img_HSV = cv2.cvtColor(img_warped, cv2.COLOR_RGB2HSV)
+        
         img_thresholded = my_lib.inRangeHSV(
             src = img_HSV, 
             lowerb = self.conf["IMAGE_PROCESSING"]["hsv_threshold"]["low"], 
             upperb = self.conf["IMAGE_PROCESSING"]["hsv_threshold"]["high"])
+        
+        
         # Label connected pixels to form groups
         # https://docs.opencv.org/master/d3/dc0/group__imgproc__shape.html
         _, img_labeled, blobs_stats, _ = cv2.connectedComponentsWithStats(
             img_thresholded, ltype=cv2.CV_16U)
+        
         # Take only big connected pixel groups
+        
         line_label = np.where(
             blobs_stats[1:, cv2.CC_STAT_AREA] >= self.conf["IMAGE_PROCESSING"]["line_filtering"]["min_area"]*img_thresholded.size/100)[0]+1 # the "1" is to exclude label 0 who is the background
         # Quit if no lines found
+        
         if (line_label.size == 0):
             self.slop_history["lastUpdate"]+=1
             print(f"No line found ({self.slop_history['lastUpdate']})")
         else:
-            # Polyfit
+            # Find conected pixels shape
             all_coef = []
             std_deviation = []
+            
             for i in range(line_label.size):
                 y, x = np.where(img_labeled == line_label[i])
+                # Polyfit
                 p, V, = np.polyfit(y, x, 1, cov = True) # inversion of x and y because lines are mostly vertical
+                std_err = np.sqrt(V[0,0])
+                # Linregress
+                # slope, intercept, r_value, p_value, std_err = stats.linregress(y, x)
+                # p = (slope, intercept)
                 all_coef.append(p)
-                std_deviation.append(np.sqrt(V[0,0]))
+                std_deviation.append(std_err)
+
+            
             # Conversion into np array
             all_coef = np.array(all_coef)
             std_deviation = np.array(std_deviation)
@@ -113,10 +134,11 @@ class RoadFollower():
                 ## Combine angle and off-center of the car to compute steering
                 slop_clamped = my_lib.clamp(slop, -1, 1)
                 car_steering_norm = my_lib.mix(slop_clamped, off_centre_tan, np.abs(slop_clamped))
-
-
+            
+            
         # Draw a img with line and info if required
         if draw_result:
+            StartTime = time.time()
             # Generate image with different gray level for each connected pixels groups
             img_labelized = np.zeros_like(img_thresholded)
             if (line_label.size > 0):
@@ -146,7 +168,9 @@ class RoadFollower():
                     blobs_stats[line_label[i],cv2.CC_STAT_TOP] + int(blobs_stats[line_label[i],cv2.CC_STAT_HEIGHT]/2)
                 )
                 drawed_result = cv2.putText(drawed_result,f"SD = {std_deviation[i]:.4f}",text_org, cv2.FONT_HERSHEY_SIMPLEX, 1, self.conf["DISPLAY"]["textColor"], 2)
-        
+            StopTime = time.time()
+            print(f"{(StopTime-StartTime)*1000:.1f}")
+            
         return car_steering_norm, drawed_result
 
 
