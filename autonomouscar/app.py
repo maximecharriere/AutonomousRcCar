@@ -47,7 +47,7 @@ class AutonomousCarApp():
         #Objects
         self.car = Car(self.conf)
         self.imgRectifier = ImgRectifier(
-            imgShape = self.car.camera.resolution,
+            imgShape = (self.car.camera.resolution.height, self.car.camera.resolution.width),
             calParamFile = self.conf["IMAGE_PROCESSING"]["calibration"]["param_file"])
         self.roadFollower = RoadFollower(
             imgShape = self.car.camera.resolution, 
