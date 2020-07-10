@@ -8,6 +8,7 @@ CAMERA:
     parameters:
         resolution: [640, 480]
         framerate: ~
+        sensor_mode: ~
         awb_mode: 'auto'
         awb_gains: ~
         exposure_mode: 'auto'
@@ -57,7 +58,7 @@ CONTROLLER:
     btn_stop: "BTN_X"
 
 DISPLAY:
-    show_plots: False
+    show_plots: True
     show_cam_preview: False
     linecolor_right: [255,0,0] #bgr
     lineColor_left: [255,255,0] #bgr
