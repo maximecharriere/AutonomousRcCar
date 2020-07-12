@@ -9,9 +9,10 @@ import cv2
 import time
 import io
 
+
 class PicameraController(PiCamera):
 	def __init__(self, 
-		cam_param_dict, 
+		cam_param_dict,
 		camera_num=0, 
 		stereo_mode='none', 
 		stereo_decimate=False, 
@@ -29,15 +30,20 @@ class PicameraController(PiCamera):
 		for (arg, value) in cam_param_dict:
 			setattr(self, arg, value)
 
-		# # initialize the stream
+		# initialize the stream
 		self.rawCapture = PiRGBArray(self, size=self.resolution)
 		self.stream = self.capture_continuous(self.rawCapture,
 			format="rgb", use_video_port=True)
 		# initialize the frame and the variable used to indicate
 		# if the thread should be stopped
-		self.frame_np = None
 		self.current_frame = None
 		self.stopped = False
+
+	def capture_np(self):
+		self.capture(self.rawCapture, format="rgb", use_video_port=True)
+		frame_np = self.rawCapture.array
+		self.rawCapture.truncate(0)
+		return frame_np
 
 	def startThread(self):
 		# start the thread to read frames from the video stream
@@ -49,17 +55,8 @@ class PicameraController(PiCamera):
 			time.sleep(0.01)
 		return self
 
-	def capture_np(self):
-		self.capture(self.rawCapture, format="rgb", use_video_port=True)
-		self.frame_np = self.rawCapture.array
-		self.rawCapture.truncate(0)
-		return self.frame_np
-
 	def stopThread(self):
 		# indicate that the thread should be stopped
-		# self.stream.close()
-		# self.rawCapture.close()
-		# self.close()
 		self.stopped = True
 
 

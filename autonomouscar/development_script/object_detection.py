@@ -64,7 +64,7 @@ def main():
     camera.startThread()
 
     imgRectifier = ImgRectifier(
-            imgShape = camera.resolution,
+            imgShape = (camera.resolution.height, camera.resolution.width),
             calParamFile = conf["IMAGE_PROCESSING"]["calibration"]["param_file"])
 
     # Initialize engine.
@@ -72,8 +72,9 @@ def main():
     labels = dataset_utils.read_label_file("/home/pi/Documents/AutonomousRcCar/autonomouscar/resources/sign_label.txt")
 
     while True:
+        StartTime = time.time()
         img = camera.current_frame
-        img =imgRectifier.undistort(img)
+        # img =imgRectifier.undistort(img)
         # img = img[:480, -480:, :]
         # Run inference.
         objs = engine.detect_with_image(Image.fromarray(img), keep_aspect_ratio =False, relative_coord=False,threshold=0.2,top_k=10)
@@ -93,6 +94,9 @@ def main():
         key = cv2.waitKey(1)
         if key == ord("q"):
             break
+
+        StopTime = time.time()
+        print((StopTime-StartTime)*1000)
 
 if __name__ == '__main__':
   main()

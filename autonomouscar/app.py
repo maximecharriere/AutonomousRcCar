@@ -24,7 +24,6 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 import my_lib
-from camera_calibration import ImgRectifier
 from road_follower import RoadFollower
 from car import Car
 from scipy import stats
@@ -46,11 +45,9 @@ class AutonomousCarApp():
         self.stop_flags_history = self.stop_flags
         #Objects
         self.car = Car(self.conf)
-        self.imgRectifier = ImgRectifier(
-            imgShape = (self.car.camera.resolution.height, self.car.camera.resolution.width),
-            calParamFile = self.conf["IMAGE_PROCESSING"]["calibration"]["param_file"])
         self.roadFollower = RoadFollower(
-            imgShape = self.car.camera.resolution, 
+            camera = self.car.camera, 
+            steeringCtrl = self.car.steeringCtrl, 
             conf = self.conf)
         try:
             self.controller = InputDevice(self.conf["CONTROLLER"]["event_filename"])
@@ -60,30 +57,14 @@ class AutonomousCarApp():
             self.stop_flags['manual_stop'] = False
         
     def start(self):
-        self.car.start()
+        self.car.start() #start motor, steering and camera
+        self.roadFollower.startThread() #start the road following algorithm
+
         import threading
         print(threading.enumerate())
-        # Start a fullscreen raw preview
-        if self.conf["DISPLAY"]["show_cam_preview"]:
-            self.car.camera.start_preview()
+               
         
-        # img = self.car.camera.capture_np()
-        # img = self.imgRectifier.undistort(img)
-        i = 0
-        time_histo = np.zeros(10, dtype=float)
         while True:
-            
-            StartTime = time.time()
-            img = self.car.camera.current_frame
-            img = self.imgRectifier.undistort(img)
-            # FPS
-            StopTime = time.time()
-            
-
-            steering_value, img_polyfit  = self.roadFollower.getSteering(img, draw_result= self.conf["DISPLAY"]["show_plots"])
-            
-            if (steering_value): self.car.steeringCtrl.angle(steering_value)
-
             # Check if no lines is found from a long time
             self.stop_flags['no_road'] = (self.roadFollower.slop_history['lastUpdate'] > self.conf["IMAGE_PROCESSING"]["line_filtering"]["history_size"])
             
@@ -111,32 +92,11 @@ class AutonomousCarApp():
                 else:
                     self.car.speedCtrl.speed(my_lib.map(self.speed_limit, 0,100,0,1))
 
-
-            # Show result with plots
-            if self.conf["DISPLAY"]["show_plots"]:
-                # Show
-                cv2.namedWindow("Original", cv2.WINDOW_NORMAL)
-                cv2.namedWindow("Polyfit", cv2.WINDOW_NORMAL)
-                cv2.imshow("Original", cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
-                cv2.imshow("Polyfit", cv2.cvtColor(img_polyfit, cv2.COLOR_RGB2BGR))
-
             # Quit
             key = cv2.waitKey(1)
             if key == ord("q"):
                 break
-            
 
-            ## TIMER
-            time_histo[i] = 1000*(StopTime-StartTime)
-            i += 1
-            if i==10:
-                i = 0
-                print(time_histo.mean())
-
-
-
-        # Close properly
-        self.car.camera.stop_preview()
         cv2.destroyAllWindows()
 
 if __name__ == '__main__':

@@ -53,6 +53,7 @@ class SteeringController(_PwmActuator):
         -1   = MAX LEFT
         0  = FORWARD
         1 = MAX RIGHT"""
+        print("ici ",angle)
         self.pwm_ctrl.set_duty_cycle(my_lib.map(angle,-1,1,self.MinDutyCycle,self.MaxDutyCycle,limit=True))
 
 
@@ -64,7 +65,7 @@ class SpeedController(_PwmActuator):
         #on my car, if it goes forward and I put the min dutycycle on the motor controller,
         #the car don't go backward, but do and emergency stop
         if (self.pwm_ctrl.duty_cycle > self.NeutralDutyCycle):
-            self.pwm_ctrl.set_duty_cycle(self.minDutyCycle)
+            self.pwm_ctrl.set_duty_cycle(self.MinDutyCycle)
             time.sleep(0.3) #wait the car to be stopped
         self.pwm_ctrl.set_duty_cycle(self.NeutralDutyCycle)
 
