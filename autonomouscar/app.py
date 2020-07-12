@@ -27,6 +27,7 @@ import my_lib
 from road_follower import RoadFollower
 from car import Car
 from scipy import stats
+import threading
 
 CONFIG_FNAME = '/home/pi/Documents/AutonomousRcCar/autonomouscar/conf.yaml'
 
@@ -57,45 +58,41 @@ class AutonomousCarApp():
             self.stop_flags['manual_stop'] = False
         
     def start(self):
-        self.car.start() #start motor, steering and camera
-        self.roadFollower.startThread() #start the road following algorithm
+        with self.car: #start motor, steering commande and camera
+            with self.roadFollower: #start the road following algorithm
+                print(threading.enumerate()) 
+                while True:
+                    # Check if no lines is found from a long time
+                    self.stop_flags['no_road'] = (self.roadFollower.slop_history['lastUpdate'] > self.conf["IMAGE_PROCESSING"]["line_filtering"]["history_size"])
+                    
+                    # Controller input
+                    if self.controller:
+                        try:
+                            for event in self.controller.read():
+                                if event.type == ecodes.EV_KEY:
+                                    if event.value == True:
+                                        if event.code == ecodes.ecodes[self.conf["CONTROLLER"]["btn_stop"]]: 
+                                            self.stop_flags['manual_stop'] = True
+                                        elif  event.code == ecodes.ecodes[self.conf["CONTROLLER"]["btn_start"]]:
+                                            self.stop_flags['manual_stop'] = False
+                        except BlockingIOError:
+                            pass
+                    
+                    # Check that there are no obstacles in front of the car
+                    self.stop_flags['obstacle'] = ( self.car.ultrasonicSensor.getDistance()< self.conf['PROXIMITY']['min_distance'])
 
-        import threading
-        print(threading.enumerate())
-               
-        
-        while True:
-            # Check if no lines is found from a long time
-            self.stop_flags['no_road'] = (self.roadFollower.slop_history['lastUpdate'] > self.conf["IMAGE_PROCESSING"]["line_filtering"]["history_size"])
-            
-            # Controller input
-            if self.controller:
-                try:
-                    for event in self.controller.read():
-                        if event.type == ecodes.EV_KEY:
-                            if event.value == True:
-                                if event.code == ecodes.ecodes[self.conf["CONTROLLER"]["btn_stop"]]: 
-                                    self.stop_flags['manual_stop'] = True
-                                elif  event.code == ecodes.ecodes[self.conf["CONTROLLER"]["btn_start"]]:
-                                    self.stop_flags['manual_stop'] = False
-                except BlockingIOError:
-                    pass
-            
-            # Check that there are no obstacles in front of the car
-            self.stop_flags['obstacle'] = ( self.car.ultrasonicSensor.getDistance()< self.conf['PROXIMITY']['min_distance'])
+                    ## Car speed
+                    if (self.stop_flags_history != self.stop_flags):
+                        self.stop_flags_history = self.stop_flags
+                        if (any(self.stop_flags.values())):
+                            self.car.speedCtrl.stop()
+                        else:
+                            self.car.speedCtrl.speed(my_lib.map(self.speed_limit, 0,100,0,1))
 
-            ## Car speed
-            if (self.stop_flags_history != self.stop_flags):
-                self.stop_flags_history = self.stop_flags
-                if (any(self.stop_flags.values())):
-                    self.car.speedCtrl.stop()
-                else:
-                    self.car.speedCtrl.speed(my_lib.map(self.speed_limit, 0,100,0,1))
-
-            # Quit
-            key = cv2.waitKey(1)
-            if key == ord("q"):
-                break
+                    # Quit
+                    key = cv2.waitKey(1)
+                    if key == ord("q"):
+                        break
 
         cv2.destroyAllWindows()
 

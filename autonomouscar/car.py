@@ -4,6 +4,7 @@ from ultrasonic_sensor_controller import UltrasonicSensor
 import time 
 class Car():
     def __init__(self, conf):
+        self.conf = conf
         self.speedCtrl = SpeedController(
             pin = conf["PIN"]["pwm_speed"], 
             minDutyCycle = conf["CAR"]["speed_pwm_dc_min"],

@@ -40,7 +40,6 @@ class RoadFollower():
     def startThread(self):
         # start the thread to follow the road
         t = Thread(target=self._run, name="RoadFollower", args=())
-        t.daemon = True
         t.start()
         return self
 

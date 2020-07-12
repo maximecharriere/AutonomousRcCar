@@ -48,7 +48,6 @@ class PicameraController(PiCamera):
 	def startThread(self):
 		# start the thread to read frames from the video stream
 		t = Thread(target=self._update, name="CameraCapture", args=())
-		t.daemon = True
 		t.start()
 		# waiting that the first frame is taken and current_frame is not None enymore
 		while (self.current_frame is None):
