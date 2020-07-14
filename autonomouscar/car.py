@@ -4,6 +4,7 @@ from ultrasonic_sensor_controller import UltrasonicSensor
 import time 
 class Car():
     def __init__(self, conf):
+        self.conf = conf
         self.speedCtrl = SpeedController(
             pin = conf["PIN"]["pwm_speed"], 
             minDutyCycle = conf["CAR"]["speed_pwm_dc_min"],
@@ -22,11 +23,27 @@ class Car():
             pin_echo = conf['PIN']['proximity_echo']
         )
         
+    def __enter__(self):
+        """ Entering a with statement """
+        self.start()
+        return self
+    
+    def __exit__(self, exception_type, exception_value, traceback):
+        self.stop()
+        """ Exit a with statement"""
 
     def start(self):
         self.steeringCtrl.startPwm()
         self.speedCtrl.startPwm()
         self.camera.startThread()
-        time.sleep(0.2) #waiting that all start
+        # Start a fullscreen raw preview
+        if self.conf["DISPLAY"]["show_cam_preview"]:
+            self.camera.start_preview()
+
+    def stop(self):
+        self.camera.stopThread()
+        self.camera.stop_preview()
+        self.steeringCtrl.stopPwm()
+        self.speedCtrl.stopPwm()
         
         

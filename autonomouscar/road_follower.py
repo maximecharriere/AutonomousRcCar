@@ -1,15 +1,22 @@
 import my_lib
 import cv2
-from perspective_warp import ImgWarper
 import numpy as np
 import time 
 from scipy import stats
+from threading import Thread
+from perspective_warp import ImgWarper
+from camera_calibration import ImgRectifier
 
 class RoadFollower():
-    def __init__(self, imgShape, conf):
+    def __init__(self, camera, steeringCtrl, conf):
         self.conf = conf
+        self.camera = camera
+        self.steeringCtrl = steeringCtrl
+        self.imgRectifier = ImgRectifier(
+            imgShape = (camera.resolution.height, camera.resolution.width),
+            calParamFile = self.conf["IMAGE_PROCESSING"]["calibration"]["param_file"])
         self.imgWarper = ImgWarper(
-            imgShape = imgShape, 
+            imgShape = (camera.resolution.height, camera.resolution.width), 
             corners = self.conf["IMAGE_PROCESSING"]["perspective_warp"]["points"], 
             realWorldCornersDistance = self.conf["IMAGE_PROCESSING"]["perspective_warp"]["realworld_line_distance"], 
             margin_pc = self.conf["IMAGE_PROCESSING"]["perspective_warp"]["warp_margin"], 
@@ -19,7 +26,41 @@ class RoadFollower():
             "lastUpdate" : self.conf["IMAGE_PROCESSING"]["line_filtering"]["history_size"]+1
         }
 
+        self.stopped = False
+
+    def __enter__(self):
+        """ Entering a with statement """
+        self.startThread()
+        return self
     
+    def __exit__(self, exception_type, exception_value, traceback):
+        self.stopThread()
+        """ Exit a with statement"""
+
+    def startThread(self):
+        # start the thread to follow the road
+        t = Thread(target=self._run, name="RoadFollower", args=())
+        t.start()
+        return self
+
+    def stopThread(self):
+        # indicate that the thread should be stopped
+        self.stopped = True
+
+    def _run(self):
+        while not self.stopped:
+            img = self.camera.current_frame
+            steering_value, img_polyfit  = self.getSteering(img, draw_result= self.conf["DISPLAY"]["show_plots"])
+            if (steering_value): self.steeringCtrl.angle(steering_value)
+
+            # Show result with plots
+            if self.conf["DISPLAY"]["show_plots"]:
+                # Show
+                cv2.namedWindow("RoadFollower", cv2.WINDOW_NORMAL)
+                cv2.imshow("RoadFollower", cv2.cvtColor(img_polyfit, cv2.COLOR_RGB2BGR))
+                cv2.waitKey(1)
+
+
     def getSteering(self, img, draw_result = False):
         '''
         RETURN
@@ -35,8 +76,8 @@ class RoadFollower():
         drawed_result = None
 
         # Transform the image to see it from above
-        img_warped = self.imgWarper.warp(img)
-        
+        img_undistored = self.imgRectifier.undistort(img)
+        img_warped = self.imgWarper.warp(img_undistored)
         
 
         # Apply a threshold on the HSV values of the image
@@ -138,7 +179,6 @@ class RoadFollower():
             
         # Draw a img with line and info if required
         if draw_result:
-            StartTime = time.time()
             # Generate image with different gray level for each connected pixels groups
             img_labelized = np.zeros_like(img_thresholded)
             if (line_label.size > 0):
@@ -168,8 +208,6 @@ class RoadFollower():
                     blobs_stats[line_label[i],cv2.CC_STAT_TOP] + int(blobs_stats[line_label[i],cv2.CC_STAT_HEIGHT]/2)
                 )
                 drawed_result = cv2.putText(drawed_result,f"SD = {std_deviation[i]:.4f}",text_org, cv2.FONT_HERSHEY_SIMPLEX, 1, self.conf["DISPLAY"]["textColor"], 2)
-            StopTime = time.time()
-            print(f"{(StopTime-StartTime)*1000:.1f}")
             
         return car_steering_norm, drawed_result
 
