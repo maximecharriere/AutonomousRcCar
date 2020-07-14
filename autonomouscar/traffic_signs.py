@@ -64,6 +64,8 @@ class StopSign(_TrafficSignProcessor):
         if not self.present and self.has_stopped:
             if self.no_stop_count >= self.max_no_stop_gaps:
                 self._reset()
+                car_state['stop_flags']['stop_sign'] = False
+                return
             else:
                 #it is considered that the sign is still present
                 self.no_stop_count += 1
@@ -71,28 +73,20 @@ class StopSign(_TrafficSignProcessor):
         else:
             self.no_stop_count = 0
 
-        if self.in_wait_mode:
-            logging.debug('stop sign: 2) still waiting')
-            # wait for 2 second before proceeding
-            car_state['speed'] = 0
-            return
-
-        if not self.has_stopped:
-            logging.debug('stop sign: 1) just detected')
-
-            car_state['speed'] = 0
-            self.in_wait_mode = True
-            self.has_stopped = True
-            self.timer = Timer(self.wait_time_in_sec, self.wait_done)
-            self.timer.start()
-            return
+        if self.present:
+            if not self.has_stopped:
+                car_state['stop_flags']['stop_sign'] = True
+                self.has_stopped = True
+                self.timer = Timer(self.wait_time_in_sec, self.wait_done)
+                self.timer.start()
+                return
 
     def wait_done(self):
-        logging.debug('stop sign: 3) finished waiting for %d seconds' % self.wait_time_in_sec)
-        self.in_wait_mode = False
+        car_state['stop_flags']['stop_sign'] = False
 
     def _reset(self):
         self.has_stopped = False
         self.no_stop_count = 0
-        self.in_wait_mode = False
-        self.timer = None
+        if self.timer is not None:
+            self.timer.cancel()
+            self.timer = None

@@ -47,6 +47,7 @@ PROXIMITY:
     min_distance: 0.3 #meter
 
 OBJECT_DETECTION:
+    model_fname: '/home/pi/Documents/AutonomousRcCar/autonomouscar/resources/model_quantized_edgetpu.tflite'
     match_threshold: 0.3 #%
     max_obj: 3
     detection_distance: 0.3 #meter

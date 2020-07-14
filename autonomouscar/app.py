@@ -25,6 +25,7 @@ import cv2
 import matplotlib.pyplot as plt
 import my_lib
 from road_follower import RoadFollower
+from object_detector import ObjectsDetector
 from car import Car
 from scipy import stats
 import threading
@@ -52,6 +53,7 @@ class AutonomousCarApp():
             camera = self.car.camera, 
             steeringCtrl = self.car.steeringCtrl, 
             conf = self.conf)
+        self.objectDetector = ObjectsDetector(self.conf, self.car.camera, self.car_state)
         try:
             self.controller = InputDevice(self.conf["CONTROLLER"]["event_filename"])
         except FileNotFoundError:

@@ -14,14 +14,13 @@ _SHOW_IMAGE = False
 class ObjectsDetector:
     """
     """
-    def __init__(self, camera, model, label, car_state, conf):
+    def __init__(self, conf, camera, car_state):
         self.camera = camera
         self.car_state = car_state
         self.conf = conf
         
         # Initialize engine.
-        self.engine = DetectionEngine(model)
-        self.labels = dataset_utils.read_label_file(label)
+        self.engine = DetectionEngine(conf['OBJECT_DETECTION']['model_fname'])
 
 
         # Init a dictonary with obj_id and obj_label as key, and the corresponding traffic object class as value
