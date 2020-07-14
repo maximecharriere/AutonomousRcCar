@@ -53,7 +53,6 @@ class SteeringController(_PwmActuator):
         -1   = MAX LEFT
         0  = FORWARD
         1 = MAX RIGHT"""
-        print("ici ",angle)
         self.pwm_ctrl.set_duty_cycle(my_lib.map(angle,-1,1,self.MinDutyCycle,self.MaxDutyCycle,limit=True))
 
 

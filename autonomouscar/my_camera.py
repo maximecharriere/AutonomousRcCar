@@ -8,6 +8,7 @@ import time
 import cv2
 import time
 import io
+from camera_calibration import ImgRectifier
 
 
 class PicameraController(PiCamera):
@@ -39,11 +40,24 @@ class PicameraController(PiCamera):
 		self.current_frame = None
 		self.stopped = False
 
+		self.imgRectifier = ImgRectifier(
+            imgShape = (self.resolution.height, self.resolution.width),
+            calParamFile = "/home/pi/Documents/AutonomousRcCar/autonomouscar/resources/cameraCalibrationParam_V2.pickle")
+
 	def capture_np(self):
 		self.capture(self.rawCapture, format="rgb", use_video_port=True)
 		frame_np = self.rawCapture.array
 		self.rawCapture.truncate(0)
 		return frame_np
+
+	def __enter__(self):
+		""" Entering a with statement """
+		self.startThread()
+		return self		
+		
+	def __exit__(self, exception_type, exception_value, traceback):
+		self.stopThread()
+		""" Exit a with statement"""
 
 	def startThread(self):
 		# start the thread to read frames from the video stream
@@ -65,9 +79,9 @@ class PicameraController(PiCamera):
 		for f in self.stream:
 			# grab the frame from the stream and clear the stream in
 			# preparation for the next frame
-			self.current_frame = f.array
+			img = f.array
 			self.rawCapture.truncate(0)
-
+			self.current_frame = img#self.imgRectifier.undistort(img)
 			# if the thread indicator variable is set, stop the thread
 			# and restor camera resources
 			if self.stopped:
@@ -76,5 +90,5 @@ class PicameraController(PiCamera):
 				self.close()
 				return
 			# StopTime = time.time()
-			# print(f"{1/(StopTime-StartTime):.1f}")
+			# print(f"Camera: {1/(StopTime-StartTime):.1f} FPS")
 			# StartTime = time.time()

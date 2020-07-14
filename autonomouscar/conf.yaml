@@ -5,6 +5,8 @@ PIN: # Pin declaration with BCM format
     proximity_echo: 24
 
 CAMERA:
+    focal_lenght: 1.8 #mm
+    sensor_shape: [3.674, 2.738] #mm
     parameters:
         resolution: [640, 480]
         framerate: ~
@@ -44,6 +46,19 @@ IMAGE_PROCESSING:
 PROXIMITY:
     min_distance: 0.3 #meter
 
+OBJECT_DETECTION:
+    match_threshold: 0.3 #%
+    max_obj: 3
+    detection_distance: 0.3 #meter
+    obj_height: #mm
+        StopSign: 80
+        TrafficLight: 80
+        SpeedLimit: 70
+        Battery: 70
+    stop_sign_wait_time: 3 #s
+
+
+
 CAR:
     speed: 0.29
     speed_pwm_dc_min: 1.2
@@ -58,7 +73,7 @@ CONTROLLER:
     btn_stop: "BTN_X"
 
 DISPLAY:
-    show_plots: True
+    show_plots: False
     show_cam_preview: False
     linecolor_right: [255,0,255] #rgb
     lineColor_left: [255,255,0] #rgb

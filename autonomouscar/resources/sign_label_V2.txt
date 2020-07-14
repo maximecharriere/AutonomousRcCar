@@ -1,0 +1,7 @@
+battery
+speed25
+speed50
+stop
+trafficGreen
+trafficOff
+trafficRed

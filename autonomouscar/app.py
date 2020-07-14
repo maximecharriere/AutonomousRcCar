@@ -35,15 +35,17 @@ class AutonomousCarApp():
     def __init__(self, conf_fname):
         # Load configuration file
         self.conf = my_lib.load_configuration(conf_fname)
-        self.speed_limit = self.conf["CAR"]["default_speed_limit"]
-        self.stop_flags = {
-            'no_road'     : True,
-            'stop_sign'   : False,
-            'red_light'   : False,
-            'obstacle'    : True,
-            'manual_stop' : True
+        self.car_state = {
+            'stop_flags': {
+                'no_road'     : True,
+                'stop_sign'   : False,
+                'red_light'   : False,
+                'obstacle'    : True,
+                'manual_stop' : True
+            },
+            'speed_limit'     : self.conf["CAR"]["default_speed_limit"]
         }
-        self.stop_flags_history = self.stop_flags
+        self.stop_flags_history = self.car_state['stop_flags']
         #Objects
         self.car = Car(self.conf)
         self.roadFollower = RoadFollower(
@@ -55,7 +57,7 @@ class AutonomousCarApp():
         except FileNotFoundError:
             self.controller = None
             print("A wrong gamepad event filename is provided or the gamepad is not connected !")
-            self.stop_flags['manual_stop'] = False
+            self.car_state['stop_flags']['manual_stop'] = False
         
     def start(self):
         with self.car: #start motor, steering commande and camera
@@ -63,7 +65,7 @@ class AutonomousCarApp():
                 print(threading.enumerate()) 
                 while True:
                     # Check if no lines is found from a long time
-                    self.stop_flags['no_road'] = (self.roadFollower.slop_history['lastUpdate'] > self.conf["IMAGE_PROCESSING"]["line_filtering"]["history_size"])
+                    self.car_state['stop_flags']['no_road'] = (self.roadFollower.slop_history['lastUpdate'] > self.conf["IMAGE_PROCESSING"]["line_filtering"]["history_size"])
                     
                     # Controller input
                     if self.controller:
@@ -72,19 +74,19 @@ class AutonomousCarApp():
                                 if event.type == ecodes.EV_KEY:
                                     if event.value == True:
                                         if event.code == ecodes.ecodes[self.conf["CONTROLLER"]["btn_stop"]]: 
-                                            self.stop_flags['manual_stop'] = True
+                                            self.car_state['stop_flags']['manual_stop'] = True
                                         elif  event.code == ecodes.ecodes[self.conf["CONTROLLER"]["btn_start"]]:
-                                            self.stop_flags['manual_stop'] = False
+                                            self.car_state['stop_flags']['manual_stop'] = False
                         except BlockingIOError:
                             pass
                     
                     # Check that there are no obstacles in front of the car
-                    self.stop_flags['obstacle'] = ( self.car.ultrasonicSensor.getDistance()< self.conf['PROXIMITY']['min_distance'])
+                    self.car_state['stop_flags']['obstacle'] = ( self.car.ultrasonicSensor.getDistance()< self.conf['PROXIMITY']['min_distance'])
 
                     ## Car speed
-                    if (self.stop_flags_history != self.stop_flags):
-                        self.stop_flags_history = self.stop_flags
-                        if (any(self.stop_flags.values())):
+                    if (self.stop_flags_history != self.car_state['stop_flags']):
+                        self.stop_flags_history = self.car_state['stop_flags']
+                        if (any(self.car_state['stop_flags'].values())):
                             self.car.speedCtrl.stop()
                         else:
                             self.car.speedCtrl.speed(my_lib.map(self.speed_limit, 0,100,0,1))

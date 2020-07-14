@@ -2,11 +2,13 @@ from threading import Thread
 import time
 
 class Printer:
-    def startThread(self, writer):
-        t = Thread(target=self._printVar, name="printer", args=(writer,))
-        t.start()
+    def __init__(self):
+        self.init()
+        
+    def init(self):
+        self.value = 50
 
-    def _printVar(self, writer):
-        while True:
-            print(f"Thread var: {writer.var}")
-            time.sleep(1)
+
+printer = Printer()
+
+print(printer.value)

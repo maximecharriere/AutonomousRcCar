@@ -9,11 +9,11 @@ from camera_calibration import ImgRectifier
 
 class RoadFollower():
     def __init__(self, camera, steeringCtrl, conf):
-        self.conf = conf
         self.camera = camera
         self.steeringCtrl = steeringCtrl
+        self.conf = conf
         self.imgRectifier = ImgRectifier(
-            imgShape = (camera.resolution.height, camera.resolution.width),
+            imgShape = (self.resolution.height, self.resolution.width),
             calParamFile = self.conf["IMAGE_PROCESSING"]["calibration"]["param_file"])
         self.imgWarper = ImgWarper(
             imgShape = (camera.resolution.height, camera.resolution.width), 
@@ -76,8 +76,9 @@ class RoadFollower():
         drawed_result = None
 
         # Transform the image to see it from above
-        img_undistored = self.imgRectifier.undistort(img)
-        img_warped = self.imgWarper.warp(img_undistored)
+        
+        img = self.imgRectifier.undistort(img)
+        img_warped = self.imgWarper.warp(img)
         
 
         # Apply a threshold on the HSV values of the image

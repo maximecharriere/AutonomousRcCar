@@ -51,7 +51,6 @@ import cv2
 import time
 from PIL import Image
 from my_camera import PicameraController
-from camera_calibration import ImgRectifier
 import numpy as np
 
 def main():
@@ -61,42 +60,34 @@ def main():
     camera = PicameraController(
             cam_param_dict = [(arg, value) for (arg, value) in conf['CAMERA']['parameters'].items() if value != None]
         )
-    camera.startThread()
-
-    imgRectifier = ImgRectifier(
-            imgShape = (camera.resolution.height, camera.resolution.width),
-            calParamFile = conf["IMAGE_PROCESSING"]["calibration"]["param_file"])
 
     # Initialize engine.
     engine = DetectionEngine("/home/pi/Documents/AutonomousRcCar/autonomouscar/resources/model_quantized_edgetpu.tflite")
     labels = dataset_utils.read_label_file("/home/pi/Documents/AutonomousRcCar/autonomouscar/resources/sign_label.txt")
 
-    while True:
-        StartTime = time.time()
-        img = camera.current_frame
-        # img =imgRectifier.undistort(img)
-        # img = img[:480, -480:, :]
-        # Run inference.
-        objs = engine.detect_with_image(Image.fromarray(img), keep_aspect_ratio =False, relative_coord=False,threshold=0.2,top_k=10)
+    with camera:
+        while True:
+            
+            img = camera.current_frame
+            # Run inference.
+            objs = engine.detect_with_image(Image.fromarray(img), keep_aspect_ratio =False, relative_coord=False,threshold=0.2,top_k=10)
 
-        # Print and draw detected objects.
-        for obj in objs:
-            if labels:
+            # Print and draw detected objects.
+            for obj in objs:
+                obj_height_pix = obj.bounding_box[1][1]  - obj.bounding_box[0][1]
                 cv2.rectangle(img,tuple(obj.bounding_box[0].astype(int)),tuple(obj.bounding_box[1].astype(int)),color=(255,0,0))
-                cv2.putText(img, f"{labels[obj.label_id]} ({obj.score*100:.0f}%)",tuple(obj.bounding_box[0].astype(int)-(70,0)),cv2.FONT_HERSHEY_SIMPLEX, 0.5, conf["DISPLAY"]["textColor"], 1)
-        if not objs:
-            print('No objects detected.')
+                cv2.putText(img, f"{labels[obj.label_id]} ({obj.score*100:.0f}%) pix: {obj_height_pix:.0f} d: {(1.8*80*480)/(10*obj_height_pix*2.738):.1f}",tuple(obj.bounding_box[0].astype(int)-(70,0)),cv2.FONT_HERSHEY_SIMPLEX, 0.5, conf["DISPLAY"]["textColor"], 1)
 
-        cv2.namedWindow("Objects", cv2.WINDOW_NORMAL)
-        cv2.imshow("Objects", cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
+            if not objs:
+                print('No objects detected.')
 
-        # Quit
-        key = cv2.waitKey(1)
-        if key == ord("q"):
-            break
+            cv2.namedWindow("Objects", cv2.WINDOW_NORMAL)
+            cv2.imshow("Objects", cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
 
-        StopTime = time.time()
-        print((StopTime-StartTime)*1000)
+            # Quit
+            key = cv2.waitKey(1)
+            if key == ord("q"):
+                break
 
 if __name__ == '__main__':
   main()
