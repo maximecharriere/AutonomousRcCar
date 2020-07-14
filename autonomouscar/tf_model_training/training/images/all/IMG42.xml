@@ -1,7 +1,7 @@
 <annotation>
-	<folder>signLearningImg</folder>
+	<folder>all</folder>
 	<filename>IMG42.jpg</filename>
-	<path>C:\Users\maxim\OneDrive\HEIG-VD\Travail de bachelor\AutonomousRcCar\Images\signLearningImg\IMG42.jpg</path>
+	<path>C:\Users\maxim\OneDrive\HEIG-VD\Travail de bachelor\AutonomousRcCar\autonomouscar\tf_model_training\training\images\all\IMG42.jpg</path>
 	<source>
 		<database>Unknown</database>
 	</source>
@@ -18,21 +18,21 @@
 		<difficult>0</difficult>
 		<bndbox>
 			<xmin>60</xmin>
-			<ymin>121</ymin>
-			<xmax>127</xmax>
-			<ymax>187</ymax>
+			<ymin>123</ymin>
+			<xmax>124</xmax>
+			<ymax>185</ymax>
 		</bndbox>
 	</object>
 	<object>
-		<name>traffic light</name>
+		<name>trafficLightGreen</name>
 		<pose>Unspecified</pose>
 		<truncated>0</truncated>
 		<difficult>0</difficult>
 		<bndbox>
-			<xmin>268</xmin>
-			<ymin>100</ymin>
-			<xmax>295</xmax>
-			<ymax>138</ymax>
+			<xmin>269</xmin>
+			<ymin>102</ymin>
+			<xmax>292</xmax>
+			<ymax>134</ymax>
 		</bndbox>
 	</object>
 	<object>
@@ -43,8 +43,8 @@
 		<bndbox>
 			<xmin>391</xmin>
 			<ymin>104</ymin>
-			<xmax>406</xmax>
-			<ymax>123</ymax>
+			<xmax>404</xmax>
+			<ymax>122</ymax>
 		</bndbox>
 	</object>
 	<object>
@@ -54,9 +54,9 @@
 		<difficult>0</difficult>
 		<bndbox>
 			<xmin>553</xmin>
-			<ymin>103</ymin>
-			<xmax>630</xmax>
-			<ymax>168</ymax>
+			<ymin>105</ymin>
+			<xmax>628</xmax>
+			<ymax>166</ymax>
 		</bndbox>
 	</object>
 </annotation>

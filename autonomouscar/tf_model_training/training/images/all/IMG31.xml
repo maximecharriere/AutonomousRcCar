@@ -1,7 +1,7 @@
 <annotation>
-	<folder>signLearningImg</folder>
+	<folder>all</folder>
 	<filename>IMG31.jpg</filename>
-	<path>C:\Users\maxim\OneDrive\HEIG-VD\Travail de bachelor\AutonomousRcCar\Images\signLearningImg\IMG31.jpg</path>
+	<path>C:\Users\maxim\OneDrive\HEIG-VD\Travail de bachelor\AutonomousRcCar\autonomouscar\tf_model_training\training\images\all\IMG31.jpg</path>
 	<source>
 		<database>Unknown</database>
 	</source>
@@ -24,15 +24,15 @@
 		</bndbox>
 	</object>
 	<object>
-		<name>traffic light</name>
+		<name>trafficLightRed</name>
 		<pose>Unspecified</pose>
 		<truncated>0</truncated>
 		<difficult>0</difficult>
 		<bndbox>
 			<xmin>186</xmin>
 			<ymin>101</ymin>
-			<xmax>216</xmax>
-			<ymax>140</ymax>
+			<xmax>213</xmax>
+			<ymax>139</ymax>
 		</bndbox>
 	</object>
 	<object>
@@ -42,8 +42,8 @@
 		<difficult>0</difficult>
 		<bndbox>
 			<xmin>452</xmin>
-			<ymin>101</ymin>
-			<xmax>492</xmax>
+			<ymin>102</ymin>
+			<xmax>490</xmax>
 			<ymax>138</ymax>
 		</bndbox>
 	</object>
@@ -53,10 +53,10 @@
 		<truncated>1</truncated>
 		<difficult>0</difficult>
 		<bndbox>
-			<xmin>584</xmin>
+			<xmin>582</xmin>
 			<ymin>114</ymin>
 			<xmax>640</xmax>
-			<ymax>179</ymax>
+			<ymax>176</ymax>
 		</bndbox>
 	</object>
 </annotation>

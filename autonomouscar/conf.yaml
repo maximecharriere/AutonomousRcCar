@@ -8,6 +8,7 @@ CAMERA:
     parameters:
         resolution: [640, 480]
         framerate: ~
+        sensor_mode: 2
         awb_mode: 'auto'
         awb_gains: ~
         exposure_mode: 'auto'
