@@ -50,10 +50,18 @@ class AutonomousCarApp():
         #Objects
         self.car = Car(self.conf)
         self.roadFollower = RoadFollower(
+            conf = self.conf,
             camera = self.car.camera, 
             steeringCtrl = self.car.steeringCtrl, 
-            conf = self.conf)
-        self.objectDetector = ObjectsDetector(self.conf, self.car.camera, self.car_state)
+            car_state = self.car_state)
+        self.objectDetector = ObjectsDetector(
+            conf = self.conf, 
+            camera  = self.car.camera, 
+            car_state = self.car_state)
+        self.obstacleDetector = ObstacleDetector(
+            min_distance = self.conf['PROXIMITY']['min_distance'], 
+            distance_sensor = self.car.ultrasonicSensor, 
+            car_state = self.car_state)
         try:
             self.controller = InputDevice(self.conf["CONTROLLER"]["event_filename"])
         except FileNotFoundError:
@@ -64,39 +72,37 @@ class AutonomousCarApp():
     def start(self):
         with self.car: #start motor, steering commande and camera
             with self.roadFollower: #start the road following algorithm
-                print(threading.enumerate()) 
-                while True:
-                    # Check if no lines is found from a long time
-                    self.car_state['stop_flags']['no_road'] = (self.roadFollower.slop_history['lastUpdate'] > self.conf["IMAGE_PROCESSING"]["line_filtering"]["history_size"])
-                    
-                    # Controller input
-                    if self.controller:
-                        try:
-                            for event in self.controller.read():
-                                if event.type == ecodes.EV_KEY:
-                                    if event.value == True:
-                                        if event.code == ecodes.ecodes[self.conf["CONTROLLER"]["btn_stop"]]: 
-                                            self.car_state['stop_flags']['manual_stop'] = True
-                                        elif  event.code == ecodes.ecodes[self.conf["CONTROLLER"]["btn_start"]]:
-                                            self.car_state['stop_flags']['manual_stop'] = False
-                        except BlockingIOError:
-                            pass
-                    
-                    # Check that there are no obstacles in front of the car
-                    self.car_state['stop_flags']['obstacle'] = ( self.car.ultrasonicSensor.getDistance()< self.conf['PROXIMITY']['min_distance'])
+                with self.objectDetector: #start the sign detector algorithm
+                    with self.obstacleDetector: #start the obstacle detector algorithm
+                        print('----------------  ACTIVE THREAD  ----------------')
+                        for thread in threading.enumerate():
+                            print(thread)
+                            while True:
+                                # Controller input
+                                if self.controller:
+                                    try:
+                                        for event in self.controller.read():
+                                            if event.type == ecodes.EV_KEY:
+                                                if event.value == True:
+                                                    if event.code == ecodes.ecodes[self.conf["CONTROLLER"]["btn_stop"]]: 
+                                                        self.car_state['stop_flags']['manual_stop'] = True
+                                                    elif  event.code == ecodes.ecodes[self.conf["CONTROLLER"]["btn_start"]]:
+                                                        self.car_state['stop_flags']['manual_stop'] = False
+                                    except BlockingIOError:
+                                        pass
+                                
+                                ## Car speed
+                                if (self.stop_flags_history != self.car_state['stop_flags']):
+                                    self.stop_flags_history = self.car_state['stop_flags']
+                                    if (any(self.car_state['stop_flags'].values())):
+                                        self.car.speedCtrl.stop()
+                                    else:
+                                        self.car.speedCtrl.speed(my_lib.map(self.speed_limit, 0,100,0,1))
 
-                    ## Car speed
-                    if (self.stop_flags_history != self.car_state['stop_flags']):
-                        self.stop_flags_history = self.car_state['stop_flags']
-                        if (any(self.car_state['stop_flags'].values())):
-                            self.car.speedCtrl.stop()
-                        else:
-                            self.car.speedCtrl.speed(my_lib.map(self.speed_limit, 0,100,0,1))
-
-                    # Quit
-                    key = cv2.waitKey(1)
-                    if key == ord("q"):
-                        break
+                                # Quit
+                                key = cv2.waitKey(1)
+                                if key == ord("q"):
+                                    break
 
         cv2.destroyAllWindows()
 

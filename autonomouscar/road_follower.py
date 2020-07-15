@@ -8,10 +8,11 @@ from perspective_warp import ImgWarper
 from camera_calibration import ImgRectifier
 
 class RoadFollower():
-    def __init__(self, camera, steeringCtrl, conf):
+    def __init__(self, conf, camera, steeringCtrl, car_state):
         self.camera = camera
         self.steeringCtrl = steeringCtrl
         self.conf = conf
+        self.car_state = car_state
         self.imgRectifier = ImgRectifier(
             imgShape = (self.resolution.height, self.resolution.width),
             calParamFile = self.conf["IMAGE_PROCESSING"]["calibration"]["param_file"])
@@ -53,6 +54,9 @@ class RoadFollower():
             steering_value, img_polyfit  = self.getSteering(img, draw_result= self.conf["DISPLAY"]["show_plots"])
             if (steering_value): self.steeringCtrl.angle(steering_value)
 
+            # Check if no lines is found from a long time and stop car
+            self.car_state['stop_flags']['no_road'] = (self.slop_history['lastUpdate'] > self.conf["IMAGE_PROCESSING"]["line_filtering"]["history_size"])
+                                
             # Show result with plots
             if self.conf["DISPLAY"]["show_plots"]:
                 # Show
