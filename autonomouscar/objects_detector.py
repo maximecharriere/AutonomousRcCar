@@ -91,6 +91,7 @@ class ObjectsDetector:
             # Each TrafficSignProcessor change the car state
             for traffic_object in (set(self.traffic_objects.values())):
                 traffic_object.set_car_state(self.car_state)
+                traffic_object.present = False
 
 
             elapsed_time = time.time() - start_time

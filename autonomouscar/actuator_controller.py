@@ -75,7 +75,9 @@ class SpeedController(_PwmActuator):
         -1   = MAX SPEED BACKWARD
         0  = STOP
         1 = MAX SPEED FORWARD"""
-        self.pwm_ctrl.set_duty_cycle(my_lib.map(speed,-1,1,self.MinDutyCycle,self.MaxDutyCycle,limit=True))
+        duty_cycle = my_lib.map(speed,-1,1,self.MinDutyCycle,self.MaxDutyCycle,limit=True)
+        print(duty_cycle)
+        self.pwm_ctrl.set_duty_cycle(duty_cycle)
 
 
 

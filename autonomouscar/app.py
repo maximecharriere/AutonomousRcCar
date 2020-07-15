@@ -81,7 +81,7 @@ class AutonomousCarApp():
         with self.car: #start motor, steering commande and camera
             # with self.roadFollower: #start the road following algorithm
                 with self.objectDetector: #start the sign detector algorithm
-                    # with self.obstacleDetector: #start the obstacle detector algorithm
+                    with self.obstacleDetector: #start the obstacle detector algorithm
                         print('----------------  ACTIVE THREAD  ----------------')
                         for thread in threading.enumerate():
                             print(thread)
@@ -108,7 +108,7 @@ class AutonomousCarApp():
                                     self.car.speedCtrl.stop()
                                 else:
                                     print('START')
-                                    self.car.speedCtrl.speed(my_lib.map(self.car_state['speed_limit'], 0,80,0,1))
+                                    self.car.speedCtrl.speed(my_lib.map(self.car_state['speed_limit'], 0,50,0,1))
 
                             # Show result with plots
                             if self.conf["DISPLAY"]["show_plots"]:
