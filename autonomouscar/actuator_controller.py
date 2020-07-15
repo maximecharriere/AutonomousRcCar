@@ -16,6 +16,7 @@
 
 import my_lib, my_pwm
 import time
+import numpy as np
 
 PWM_FREQ = 50
 
@@ -63,6 +64,7 @@ class SpeedController(_PwmActuator):
     def stop(self):
         #on my car, if it goes forward and I put the min dutycycle on the motor controller,
         #the car don't go backward, but do and emergency stop
+        
         if (self.pwm_ctrl.duty_cycle > self.NeutralDutyCycle):
             self.pwm_ctrl.set_duty_cycle(self.MinDutyCycle)
             time.sleep(0.3) #wait the car to be stopped

@@ -12,6 +12,9 @@ from camera_calibration import ImgRectifier
 
 
 class PicameraController(PiCamera):
+	# Var to stop the thread
+	stopped = False
+
 	def __init__(self, 
 		cam_param_dict,
 		camera_num=0, 
@@ -35,10 +38,8 @@ class PicameraController(PiCamera):
 		self.rawCapture = PiRGBArray(self, size=self.resolution)
 		self.stream = self.capture_continuous(self.rawCapture,
 			format="rgb", use_video_port=True)
-		# initialize the frame and the variable used to indicate
-		# if the thread should be stopped
+
 		self.current_frame = None
-		self.stopped = False
 
 		self.imgRectifier = ImgRectifier(
             imgShape = (self.resolution.height, self.resolution.width),
@@ -75,7 +76,7 @@ class PicameraController(PiCamera):
 
 	def _update(self):
 		# keep looping infinitely until the thread is stopped
-		# StartTime = time.time()
+		start_time = time.time()
 		for f in self.stream:
 			# grab the frame from the stream and clear the stream in
 			# preparation for the next frame
@@ -89,6 +90,6 @@ class PicameraController(PiCamera):
 				self.rawCapture.close()
 				self.close()
 				return
-			# StopTime = time.time()
-			# print(f"Camera: {1/(StopTime-StartTime):.1f} FPS")
-			# StartTime = time.time()
+			stop_time = time.time()
+			# print(f"Camera: {1/(stop_time-start_time):.1f} FPS")
+			start_time = time.time()

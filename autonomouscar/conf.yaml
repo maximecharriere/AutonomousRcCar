@@ -9,7 +9,7 @@ CAMERA:
     sensor_shape: [3.674, 2.738] #mm
     parameters:
         resolution: [640, 480]
-        framerate: ~
+        framerate: 10
         sensor_mode: ~
         awb_mode: 'auto'
         awb_gains: ~
@@ -44,24 +44,25 @@ IMAGE_PROCESSING:
     line_spacing: 574
 
 PROXIMITY:
-    min_distance: 0.3 #meter
+    min_distance: 0.5 #meter
+    max_fps: 20
 
 OBJECT_DETECTION:
     model_fname: '/home/pi/Documents/AutonomousRcCar/autonomouscar/resources/model_quantized_edgetpu.tflite'
     match_threshold: 0.3 #%
     max_obj: 3
-    detection_distance: 0.3 #meter
+    detection_distance: 500 #mm
     obj_height: #mm
         StopSign: 80
         TrafficLight: 80
         SpeedLimit: 70
         Battery: 70
     stop_sign_wait_time: 3 #s
+    max_fps: 10
 
 
 
 CAR:
-    speed: 0.29
     speed_pwm_dc_min: 1.2
     speed_pwm_dc_max: 1.8
     steering_pwm_dc_min: 1.2

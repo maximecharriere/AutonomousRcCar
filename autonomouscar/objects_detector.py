@@ -5,7 +5,7 @@ import time
 from edgetpu.detection.engine import DetectionEngine
 from edgetpu.utils import dataset_utils, image_processing
 from PIL import Image
-from traffic_objects import *
+from traffic_signs import *
 from threading import Thread
 
 _SHOW_IMAGE = False
@@ -14,10 +14,14 @@ _SHOW_IMAGE = False
 class ObjectsDetector:
     """
     """
-    def __init__(self, conf, camera, car_state):
+    # Var to stop the thread
+    stopped = False
+    drawed_img = None
+    def __init__(self, conf, camera, car_state, max_fps):
         self.camera = camera
         self.car_state = car_state
         self.conf = conf
+        self.min_execution_time = 1/max_fps
         
         # Initialize engine.
         self.engine = DetectionEngine(conf['OBJECT_DETECTION']['model_fname'])
@@ -32,8 +36,6 @@ class ObjectsDetector:
         self.traffic_objects.update(dict.fromkeys([5, 'TrafficLightOff'], TrafficLight(conf, 'off')))
         self.traffic_objects.update(dict.fromkeys([6, 'TrafficLightRed'], TrafficLight(conf, 'red')))
 
-        # Var to stop the thread
-        self.stopped = False
 
     def __enter__(self):
         """ Entering a with statement """
@@ -55,6 +57,7 @@ class ObjectsDetector:
         self.stopped = True
 
     def _run(self):
+        start_time = time.time()
         while not self.stopped:
             img = self.camera.current_frame
             # Run inference.
@@ -74,6 +77,7 @@ class ObjectsDetector:
                 if self.conf["DISPLAY"]["show_plots"]:
                     cv2.rectangle(img,tuple(obj.bounding_box[0].astype(int)),tuple(obj.bounding_box[1].astype(int)), color=(255,0,0) if traffic_obj.is_nearby(obj) else (0,255,0))
                     cv2.putText(img, f"{traffic_obj.label} ({obj.score*100:.0f}%)",tuple(obj.bounding_box[0].astype(int)-(70,0)),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.conf["DISPLAY"]["textColor"], 1)
+                    self.drawed_img = img
 
             # The 25 speed limit sign has priority.
             if self.traffic_objects['SpeedLimit25'].present:
@@ -85,4 +89,12 @@ class ObjectsDetector:
                 self.traffic_objects['TrafficLightGreen'].present = False
 
             # Each TrafficSignProcessor change the car state
-            map(lambda x: x.set_car_state(self.car_state), self.traffic_objects)  
+            for traffic_object in (set(self.traffic_objects.values())):
+                traffic_object.set_car_state(self.car_state)
+
+
+            elapsed_time = time.time() - start_time
+            if (elapsed_time < self.min_execution_time):
+                time.sleep(self.min_execution_time - elapsed_time)
+            # print(f"{self.__class__.__name__}: {1/(time.time()-start_time):.1f} FPS")
+            start_time = time.time()

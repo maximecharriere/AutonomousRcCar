@@ -8,13 +8,17 @@ from perspective_warp import ImgWarper
 from camera_calibration import ImgRectifier
 
 class RoadFollower():
+    # Var to stop the thread
+    stopped = False
+    drawed_img = None
+
     def __init__(self, conf, camera, steeringCtrl, car_state):
         self.camera = camera
         self.steeringCtrl = steeringCtrl
         self.conf = conf
         self.car_state = car_state
         self.imgRectifier = ImgRectifier(
-            imgShape = (self.resolution.height, self.resolution.width),
+            imgShape = (self.camera.resolution.height, self.camera.resolution.width),
             calParamFile = self.conf["IMAGE_PROCESSING"]["calibration"]["param_file"])
         self.imgWarper = ImgWarper(
             imgShape = (camera.resolution.height, camera.resolution.width), 
@@ -27,7 +31,6 @@ class RoadFollower():
             "lastUpdate" : self.conf["IMAGE_PROCESSING"]["line_filtering"]["history_size"]+1
         }
 
-        self.stopped = False
 
     def __enter__(self):
         """ Entering a with statement """
@@ -49,20 +52,19 @@ class RoadFollower():
         self.stopped = True
 
     def _run(self):
+        self.car_state['stop_flags']['no_road'] = True
+        start_time = time.time()
         while not self.stopped:
             img = self.camera.current_frame
-            steering_value, img_polyfit  = self.getSteering(img, draw_result= self.conf["DISPLAY"]["show_plots"])
+            steering_value = self.getSteering(img, draw_result= self.conf["DISPLAY"]["show_plots"])
             if (steering_value): self.steeringCtrl.angle(steering_value)
 
             # Check if no lines is found from a long time and stop car
             self.car_state['stop_flags']['no_road'] = (self.slop_history['lastUpdate'] > self.conf["IMAGE_PROCESSING"]["line_filtering"]["history_size"])
-                                
-            # Show result with plots
-            if self.conf["DISPLAY"]["show_plots"]:
-                # Show
-                cv2.namedWindow("RoadFollower", cv2.WINDOW_NORMAL)
-                cv2.imshow("RoadFollower", cv2.cvtColor(img_polyfit, cv2.COLOR_RGB2BGR))
-                cv2.waitKey(1)
+
+            stop_time = time.time()
+            print(f"{self.__class__.__name__}: {1/(stop_time-start_time)} FPS")
+            start_time = time.time()
 
 
     def getSteering(self, img, draw_result = False):
@@ -77,7 +79,6 @@ class RoadFollower():
         
 
         car_steering_norm = None
-        drawed_result = None
 
         # Transform the image to see it from above
         
@@ -213,8 +214,8 @@ class RoadFollower():
                     blobs_stats[line_label[i],cv2.CC_STAT_TOP] + int(blobs_stats[line_label[i],cv2.CC_STAT_HEIGHT]/2)
                 )
                 drawed_result = cv2.putText(drawed_result,f"SD = {std_deviation[i]:.4f}",text_org, cv2.FONT_HERSHEY_SIMPLEX, 1, self.conf["DISPLAY"]["textColor"], 2)
-            
-        return car_steering_norm, drawed_result
+                self.drawed_img = drawed_result
+        return car_steering_norm
 
 
         

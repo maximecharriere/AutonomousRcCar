@@ -25,10 +25,12 @@ import cv2
 import matplotlib.pyplot as plt
 import my_lib
 from road_follower import RoadFollower
-from object_detector import ObjectsDetector
+from objects_detector import ObjectsDetector
+from obstacle_detector import ObstacleDetector
 from car import Car
 from scipy import stats
 import threading
+import copy
 
 CONFIG_FNAME = '/home/pi/Documents/AutonomousRcCar/autonomouscar/conf.yaml'
 
@@ -38,15 +40,15 @@ class AutonomousCarApp():
         self.conf = my_lib.load_configuration(conf_fname)
         self.car_state = {
             'stop_flags': {
-                'no_road'     : True,
+                'no_road'     : False,
                 'stop_sign'   : False,
                 'red_light'   : False,
-                'obstacle'    : True,
-                'manual_stop' : True
+                'obstacle'    : False,
+                'manual_stop' : False
             },
             'speed_limit'     : self.conf["CAR"]["default_speed_limit"]
         }
-        self.stop_flags_history = self.car_state['stop_flags']
+        self.car_state_history = copy.deepcopy(self.car_state)
         #Objects
         self.car = Car(self.conf)
         self.roadFollower = RoadFollower(
@@ -57,52 +59,67 @@ class AutonomousCarApp():
         self.objectDetector = ObjectsDetector(
             conf = self.conf, 
             camera  = self.car.camera, 
-            car_state = self.car_state)
+            car_state = self.car_state,
+            max_fps = self.conf['OBJECT_DETECTION']['max_fps'])
         self.obstacleDetector = ObstacleDetector(
             min_distance = self.conf['PROXIMITY']['min_distance'], 
             distance_sensor = self.car.ultrasonicSensor, 
-            car_state = self.car_state)
+            car_state = self.car_state,
+            max_fps = self.conf['PROXIMITY']['max_fps'])
         try:
             self.controller = InputDevice(self.conf["CONTROLLER"]["event_filename"])
+            self.car_state['stop_flags']['manual_stop'] = True
         except FileNotFoundError:
             self.controller = None
             print("A wrong gamepad event filename is provided or the gamepad is not connected !")
-            self.car_state['stop_flags']['manual_stop'] = False
         
     def start(self):
+        if self.conf["DISPLAY"]["show_plots"]:
+            cv2.namedWindow("ObjectsDetector", cv2.WINDOW_NORMAL)
+            cv2.namedWindow("RoadFollower", cv2.WINDOW_NORMAL)
+                
         with self.car: #start motor, steering commande and camera
-            with self.roadFollower: #start the road following algorithm
+            # with self.roadFollower: #start the road following algorithm
                 with self.objectDetector: #start the sign detector algorithm
-                    with self.obstacleDetector: #start the obstacle detector algorithm
+                    # with self.obstacleDetector: #start the obstacle detector algorithm
                         print('----------------  ACTIVE THREAD  ----------------')
                         for thread in threading.enumerate():
                             print(thread)
-                            while True:
-                                # Controller input
-                                if self.controller:
-                                    try:
-                                        for event in self.controller.read():
-                                            if event.type == ecodes.EV_KEY:
-                                                if event.value == True:
-                                                    if event.code == ecodes.ecodes[self.conf["CONTROLLER"]["btn_stop"]]: 
-                                                        self.car_state['stop_flags']['manual_stop'] = True
-                                                    elif  event.code == ecodes.ecodes[self.conf["CONTROLLER"]["btn_start"]]:
-                                                        self.car_state['stop_flags']['manual_stop'] = False
-                                    except BlockingIOError:
-                                        pass
-                                
-                                ## Car speed
-                                if (self.stop_flags_history != self.car_state['stop_flags']):
-                                    self.stop_flags_history = self.car_state['stop_flags']
-                                    if (any(self.car_state['stop_flags'].values())):
-                                        self.car.speedCtrl.stop()
-                                    else:
-                                        self.car.speedCtrl.speed(my_lib.map(self.speed_limit, 0,100,0,1))
+                        while True:
+                            # Controller input
+                            if self.controller:
+                                try:
+                                    for event in self.controller.read():
+                                        if event.type == ecodes.EV_KEY:
+                                            if event.value == True:
+                                                if event.code == ecodes.ecodes[self.conf["CONTROLLER"]["btn_stop"]]: 
+                                                    self.car_state['stop_flags']['manual_stop'] = True
+                                                elif  event.code == ecodes.ecodes[self.conf["CONTROLLER"]["btn_start"]]:
+                                                    self.car_state['stop_flags']['manual_stop'] = False
+                                except BlockingIOError:
+                                    pass
+                            
+                            ## Car speed
+                            if (self.car_state_history != self.car_state):
+                                # print(self.car_state)
+                                self.car_state_history = copy.deepcopy(self.car_state)
+                                if (any(self.car_state['stop_flags'].values())):
+                                    print('STOP')
+                                    self.car.speedCtrl.stop()
+                                else:
+                                    print('START')
+                                    self.car.speedCtrl.speed(my_lib.map(self.car_state['speed_limit'], 0,80,0,1))
 
-                                # Quit
-                                key = cv2.waitKey(1)
-                                if key == ord("q"):
-                                    break
+                            # Show result with plots
+                            if self.conf["DISPLAY"]["show_plots"]:
+                                if self.objectDetector.drawed_img is not None:
+                                    cv2.imshow("ObjectsDetector", cv2.cvtColor(self.objectDetector.drawed_img, cv2.COLOR_RGB2BGR))
+                                if self.roadFollower.drawed_img is not None:
+                                    cv2.imshow("RoadFollower", cv2.cvtColor(self.roadFollower.drawed_img, cv2.COLOR_RGB2BGR))
+                            # Quit
+                            key = cv2.waitKey(1)
+                            if key == ord("q"):
+                                break
 
         cv2.destroyAllWindows()
 

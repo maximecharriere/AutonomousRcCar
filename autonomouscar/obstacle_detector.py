@@ -1,10 +1,14 @@
-import timer
+import time
+from threading import Thread
 
 class ObstacleDetector:
-    def __init__(self, min_distance, distance_sensor, car_state):
+    # Var to stop the thread
+    stopped = False
+    def __init__(self, min_distance, distance_sensor, car_state, max_fps):
         self.sensor = distance_sensor
-        self.cat_state = car_state
+        self.car_state = car_state
         self.min_distance = min_distance
+        self.min_execution_time = 1/max_fps
     
     def __enter__(self):
         """ Entering a with statement """
@@ -26,9 +30,15 @@ class ObstacleDetector:
         self.stopped = True
 
     def _run(self):
+        self.car_state['stop_flags']['obstacle'] = True
         start_time = time.time()
         while not self.stopped:
-            self.car_state['stop_flags']['obstacle'] = ( self.sensor.getDistance() < self.min_distance)
-            stop_time = time.time()
-            print(f"ObstacleDetector: {1/(stop_time-start_time)} FPS")
+            distance = self.sensor.getDistance()
+            self.car_state['stop_flags']['obstacle'] = ( distance < self.min_distance)
+
+            elapsed_time = time.time() - start_time
+            if (elapsed_time < self.min_execution_time):
+                time.sleep(self.min_execution_time - elapsed_time)
+            # print(f"{self.__class__.__name__}: {1/(time.time()-start_time):.1f} FPS")
+            start_time = time.time()
 
