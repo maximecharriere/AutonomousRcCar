@@ -9,7 +9,7 @@ CAMERA:
     sensor_shape: [3.674, 2.738] #mm
     parameters:
         resolution: [640, 480]
-        framerate: 10
+        framerate: 30
         sensor_mode: ~
         awb_mode: 'auto'
         awb_gains: ~
@@ -48,7 +48,7 @@ PROXIMITY:
     max_fps: 20
 
 OBJECT_DETECTION:
-    model_fname: '/home/pi/Documents/AutonomousRcCar/autonomouscar/resources/model_quantized_edgetpu.tflite'
+    model_fname: '/home/pi/Documents/AutonomousRcCar/autonomouscar/resources/model_quantized_edgetpu_V2.tflite'
     match_threshold: 0.3 #%
     max_obj: 3
     detection_distance: 500 #mm
@@ -58,9 +58,7 @@ OBJECT_DETECTION:
         SpeedLimit: 70
         Battery: 70
     stop_sign_wait_time: 3 #s
-    max_fps: 10
-
-
+    max_fps: 20
 
 CAR:
     speed_pwm_dc_min: 1.2
@@ -75,8 +73,9 @@ CONTROLLER:
     btn_stop: "BTN_X"
 
 DISPLAY:
-    show_plots: False
+    show_plots: True
     show_cam_preview: False
+    show_fps: False
     linecolor_right: [255,0,255] #rgb
     lineColor_left: [255,255,0] #rgb
     lineColor_rejected: [255,0,0] #rgb

@@ -32,20 +32,23 @@ class TrafficLight(_TrafficSignProcessor):
         self.color = color
         self.label += str(color)
         self.no_light_count = 0
-        self.max_no_light_gap = 3
+        self.max_no_light_gap = 5
 
     def set_car_state(self, car_state):
-        if self.present:
-            self.no_light_count = 0
-            if self.color == 'red':
+        if self.color == 'red':
+            if self.present:
+                self.no_light_count = 0
                 car_state['stop_flags']['red_light'] = True
-            elif self.color == 'green' or self.color == 'off':
-                car_state['stop_flags']['red_light'] = False
-        else:
-            if self.no_light_count >= self.max_no_light_gap:
-                car_state['stop_flags']['red_light'] = False
             else:
-                self.no_light_count +=1
+                if self.no_light_count >= self.max_no_light_gap:
+                    if car_state['stop_flags']['red_light'] == True: 
+                        car_state['stop_flags']['red_light'] = False
+                else:
+                    self.no_light_count +=1
+        elif self.color == 'green' or self.color == 'off':
+            pass
+            
+                
 
 class SpeedLimit(_TrafficSignProcessor):
 

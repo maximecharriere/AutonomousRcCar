@@ -12,11 +12,12 @@ class RoadFollower():
     stopped = False
     drawed_img = None
 
-    def __init__(self, conf, camera, steeringCtrl, car_state):
+    def __init__(self, conf, camera, steeringCtrl, car_state, current_threads_fps):
         self.camera = camera
         self.steeringCtrl = steeringCtrl
         self.conf = conf
         self.car_state = car_state
+        self.current_threads_fps = current_threads_fps
         self.imgRectifier = ImgRectifier(
             imgShape = (self.camera.resolution.height, self.camera.resolution.width),
             calParamFile = self.conf["IMAGE_PROCESSING"]["calibration"]["param_file"])
@@ -43,7 +44,7 @@ class RoadFollower():
 
     def startThread(self):
         # start the thread to follow the road
-        t = Thread(target=self._run, name="RoadFollower", args=())
+        t = Thread(target=self._run, name=self.__class__.__name__, args=())
         t.start()
         return self
 
@@ -62,8 +63,7 @@ class RoadFollower():
             # Check if no lines is found from a long time and stop car
             self.car_state['stop_flags']['no_road'] = (self.slop_history['lastUpdate'] > self.conf["IMAGE_PROCESSING"]["line_filtering"]["history_size"])
 
-            stop_time = time.time()
-            print(f"{self.__class__.__name__}: {1/(stop_time-start_time)} FPS")
+            self.current_threads_fps[self.__class__.__name__] = 1/(time.time()-start_time)
             start_time = time.time()
 
 
