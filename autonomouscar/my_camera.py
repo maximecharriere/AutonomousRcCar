@@ -41,9 +41,9 @@ class PicameraController(PiCamera):
 
 		self.current_frame = None
 
-		self.imgRectifier = ImgRectifier(
-            imgShape = (self.resolution.height, self.resolution.width),
-            calParamFile = "/home/pi/Documents/AutonomousRcCar/autonomouscar/resources/cameraCalibrationParam_V2.pickle")
+		# self.imgRectifier = ImgRectifier(
+        #     imgShape = (self.resolution.height, self.resolution.width),
+        #     calParamFile = "/home/pi/Documents/AutonomousRcCar/autonomouscar/resources/cameraCalibrationParam_V2.pickle")
 
 	def capture_np(self):
 		self.capture(self.rawCapture, format="rgb", use_video_port=True)

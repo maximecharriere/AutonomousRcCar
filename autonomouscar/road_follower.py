@@ -56,7 +56,7 @@ class RoadFollower():
         start_time = time.time()
         while not self.stopped:
             img = self.camera.current_frame
-            steering_value = self.getSteering(img, draw_result= self.conf["DISPLAY"]["show_plots"])
+            steering_value = self._getSteering(img, draw_result= self.conf["DISPLAY"]["show_plots"])
             if (steering_value): self.steeringCtrl.angle(steering_value)
 
             # Check if no lines is found from a long time and stop car
@@ -67,7 +67,7 @@ class RoadFollower():
             start_time = time.time()
 
 
-    def getSteering(self, img, draw_result = False):
+    def _getSteering(self, img, draw_result = False):
         '''
         RETURN
         ------

@@ -2,7 +2,7 @@ from threading import Timer
 import logging
 
 
-class _TrafficSignProcessor:
+class _ITrafficSignProcessor:
     present = False
     def __init__(self, conf):
         self.label = self.__class__.__name__
@@ -21,14 +21,14 @@ class _TrafficSignProcessor:
         distance = (self.cam_focal_lenght*self.obj_height*self.img_height)/(obj_height_px*self.cam_sensor_shape[1])
         return distance <= self.detection_distance
 
-class Battery(_TrafficSignProcessor):
+class Battery(_ITrafficSignProcessor):
     def set_car_state(self, car_state):
         if self.present:
             print("Battery managment -> Not implemented")
 
-class TrafficLight(_TrafficSignProcessor):
+class TrafficLight(_ITrafficSignProcessor):
     def __init__(self, conf, color):
-        _TrafficSignProcessor.__init__(self, conf)
+        _ITrafficSignProcessor.__init__(self, conf)
         self.color = color
         self.label += str(color)
         self.no_light_count = 0
@@ -47,10 +47,10 @@ class TrafficLight(_TrafficSignProcessor):
             else:
                 self.no_light_count +=1
 
-class SpeedLimit(_TrafficSignProcessor):
+class SpeedLimit(_ITrafficSignProcessor):
 
     def __init__(self, conf, speed_limit):
-        _TrafficSignProcessor.__init__(self, conf)
+        _ITrafficSignProcessor.__init__(self, conf)
         self.speed_limit = speed_limit
         self.label += str(speed_limit)
 
@@ -59,12 +59,12 @@ class SpeedLimit(_TrafficSignProcessor):
             car_state['speed_limit'] = self.speed_limit
 
 
-class StopSign(_TrafficSignProcessor):
+class StopSign(_ITrafficSignProcessor):
     """
     Stop Sign object would wait
     """
     def __init__(self, conf):
-        _TrafficSignProcessor.__init__(self, conf)
+        _ITrafficSignProcessor.__init__(self, conf)
         self.wait_time_in_sec = conf['OBJECT_DETECTION']['stop_sign_wait_time']
         self.max_no_stop_gap = 3 #number of frame that the object detection engin can lose the detection of the stop sign
         self.timer = None
