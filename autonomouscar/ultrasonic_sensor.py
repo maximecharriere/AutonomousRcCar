@@ -26,14 +26,14 @@ class UltrasonicSensor():
         GPIO.output(self.pin_trigger, False)
 
         # save StartTime
-        start_time = time.time()
         while GPIO.input(self.pin_echo) == 0:
-            start_time = time.time()
+            pass
+        start_time = time.time()
     
         # save time of arrival
-        stop_time = time.time()
         while GPIO.input(self.pin_echo) == 1:
-            stop_time = time.time()
+            pass
+        stop_time = time.time()
 
         # time difference between start and arrival
         time_elapsed = stop_time - start_time

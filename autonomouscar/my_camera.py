@@ -16,7 +16,8 @@ class PicameraController(PiCamera):
 	stopped = False
 
 	def __init__(self, 
-		cam_param_dict,
+		cam_param_dict = {},
+		current_threads_fps = None,
 		camera_num=0, 
 		stereo_mode='none', 
 		stereo_decimate=False, 
@@ -26,6 +27,8 @@ class PicameraController(PiCamera):
 		led_pin=None, 
 		clock_mode='reset', 
 		framerate_range=None):
+		
+		self.current_threads_fps = current_threads_fps
 		
 		# initialize the camera
 		PiCamera.__init__(self, camera_num, stereo_mode, stereo_decimate, resolution, framerate, sensor_mode, led_pin, clock_mode, framerate_range)
@@ -62,7 +65,7 @@ class PicameraController(PiCamera):
 
 	def startThread(self):
 		# start the thread to read frames from the video stream
-		t = Thread(target=self._update, name="CameraCapture", args=())
+		t = Thread(target=self._update, name=self.__class__.__name__, args=())
 		t.start()
 		# waiting that the first frame is taken and current_frame is not None enymore
 		while (self.current_frame is None):
@@ -90,6 +93,5 @@ class PicameraController(PiCamera):
 				self.rawCapture.close()
 				self.close()
 				return
-			stop_time = time.time()
-			# print(f"Camera: {1/(stop_time-start_time):.1f} FPS")
+			self.current_threads_fps[self.__class__.__name__] = 1/(time.time()-start_time)
 			start_time = time.time()

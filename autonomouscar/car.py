@@ -3,7 +3,7 @@ from my_camera import PicameraController
 from ultrasonic_sensor import UltrasonicSensor
 import time 
 class Car():
-    def __init__(self, conf):
+    def __init__(self, conf, current_threads_fps):
         self.conf = conf
         self.speedCtrl = SpeedController(
             pin = conf["PIN"]["pwm_speed"], 
@@ -16,7 +16,8 @@ class Car():
             maxDutyCycle = conf["CAR"]["steering_pwm_dc_max"], 
             hardware=True)
         self.camera = PicameraController(
-            cam_param_dict = [(arg, value) for (arg, value) in conf['CAMERA']['parameters'].items() if value != None]
+            cam_param_dict = [(arg, value) for (arg, value) in conf['CAMERA']['parameters'].items() if value != None],
+            current_threads_fps = current_threads_fps
         )
         self.ultrasonicSensor = UltrasonicSensor(
             pin_trigger = conf['PIN']['proximity_trigger'],

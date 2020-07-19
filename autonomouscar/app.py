@@ -31,6 +31,7 @@ from car import Car
 from scipy import stats
 import threading
 import copy
+import os
 
 CONFIG_FNAME = '/home/pi/Documents/AutonomousRcCar/autonomouscar/conf.yaml'
 
@@ -49,23 +50,37 @@ class AutonomousCarApp():
             'speed_limit'     : self.conf["CAR"]["default_speed_limit"]
         }
         self.car_state_history = copy.deepcopy(self.car_state)
+        self.threads_fps = {
+            'Main'              : 0,
+            'PicameraController': 0,
+            'RoadFollower'      : 0,
+            'ObjectsDetector'   : 0,
+            'ObstacleDetector'  : 0
+        }
+        self.min_execution_time = 1/30
         #Objects
-        self.car = Car(self.conf)
+        self.car = Car(
+            conf = self.conf, 
+            current_threads_fps = self.threads_fps)
         self.roadFollower = RoadFollower(
             conf = self.conf,
             camera = self.car.camera, 
             steeringCtrl = self.car.steeringCtrl, 
-            car_state = self.car_state)
+            car_state = self.car_state,
+            current_threads_fps = self.threads_fps)
         self.objectDetector = ObjectsDetector(
             conf = self.conf, 
             camera  = self.car.camera, 
             car_state = self.car_state,
-            max_fps = self.conf['OBJECT_DETECTION']['max_fps'])
+            max_fps = self.conf['OBJECT_DETECTION']['max_fps'],
+            current_threads_fps = self.threads_fps)
         self.obstacleDetector = ObstacleDetector(
             min_distance = self.conf['PROXIMITY']['min_distance'], 
             distance_sensor = self.car.ultrasonicSensor, 
             car_state = self.car_state,
-            max_fps = self.conf['PROXIMITY']['max_fps'])
+            max_fps = self.conf['PROXIMITY']['max_fps'],
+            current_threads_fps = self.threads_fps)
+
         try:
             self.controller = InputDevice(self.conf["CONTROLLER"]["event_filename"])
             self.car_state['stop_flags']['manual_stop'] = True
@@ -81,10 +96,12 @@ class AutonomousCarApp():
         with self.car: #start motor, steering commande and camera
             # with self.roadFollower: #start the road following algorithm
                 with self.objectDetector: #start the sign detector algorithm
-                    with self.obstacleDetector: #start the obstacle detector algorithm
+                    # with self.obstacleDetector: #start the obstacle detector algorithm
                         print('----------------  ACTIVE THREAD  ----------------')
                         for thread in threading.enumerate():
                             print(thread)
+
+                        # start_time = time.time()
                         while True:
                             # Controller input
                             if self.controller:
@@ -104,10 +121,10 @@ class AutonomousCarApp():
                                 # print(self.car_state)
                                 self.car_state_history = copy.deepcopy(self.car_state)
                                 if (any(self.car_state['stop_flags'].values())):
-                                    print('STOP')
+                                    print('STOP', self.car_state)
                                     self.car.speedCtrl.stop()
                                 else:
-                                    print('START')
+                                    print('START', self.car_state)
                                     self.car.speedCtrl.speed(my_lib.map(self.car_state['speed_limit'], 0,50,0,1))
 
                             # Show result with plots
@@ -120,6 +137,23 @@ class AutonomousCarApp():
                             key = cv2.waitKey(1)
                             if key == ord("q"):
                                 break
+
+                            
+                            # elapsed_time = time.time() - start_time
+                            # if (elapsed_time < self.min_execution_time):
+                            #     time.sleep(self.min_execution_time - elapsed_time)
+                            # self.threads_fps['Main'] = 1/(time.time()-start_time)
+                            # start_time = time.time()
+
+                            # Print thread FPS
+                            if self.conf['DISPLAY']['show_fps']:
+                                # os.system('clear')
+                                row_format_str ="{:^20}" * (len(self.threads_fps))
+                                row_format_num ="{:^20.1f}" * (len(self.threads_fps))
+                                print(row_format_str.format(*self.threads_fps.keys()))
+                                print(row_format_num.format(*self.threads_fps.values()))
+
+                            
 
         cv2.destroyAllWindows()
 

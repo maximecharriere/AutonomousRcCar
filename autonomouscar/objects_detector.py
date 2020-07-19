@@ -17,11 +17,12 @@ class ObjectsDetector:
     # Var to stop the thread
     stopped = False
     drawed_img = None
-    def __init__(self, conf, camera, car_state, max_fps):
+    def __init__(self, conf, camera, car_state, max_fps, current_threads_fps):
         self.camera = camera
         self.car_state = car_state
         self.conf = conf
         self.min_execution_time = 1/max_fps
+        self.current_threads_fps = current_threads_fps
         
         # Initialize engine.
         self.engine = DetectionEngine(conf['OBJECT_DETECTION']['model_fname'])
@@ -48,7 +49,7 @@ class ObjectsDetector:
 
     def startThread(self):
         # start the thread to follow the road
-        t = Thread(target=self._run, name="ObjectDetector", args=())
+        t = Thread(target=self._run, name=self.__class__.__name__, args=())
         t.start()
         return self
 
@@ -67,18 +68,20 @@ class ObjectsDetector:
                 relative_coord=False,
                 threshold=self.conf['OBJECT_DETECTION']['match_threshold'],
                 top_k=self.conf['OBJECT_DETECTION']['max_obj'])
-            
             for obj in objs:
                 traffic_obj = self.traffic_objects[obj.label_id]
                 if traffic_obj.is_nearby(obj):
                     traffic_obj.present = True
+                    # print(traffic_obj.label)
+            # if (len(objs) > 0):
+            #     print("")
 
                 # Print and draw detected objects.
                 if self.conf["DISPLAY"]["show_plots"]:
-                    cv2.rectangle(img,tuple(obj.bounding_box[0].astype(int)),tuple(obj.bounding_box[1].astype(int)), color=(255,0,0) if traffic_obj.is_nearby(obj) else (0,255,0))
+                    cv2.rectangle(img,tuple(obj.bounding_box[0].astype(int)),tuple(obj.bounding_box[1].astype(int)), color=(0,255,0) if traffic_obj.is_nearby(obj) else (255,0,0))
                     cv2.putText(img, f"{traffic_obj.label} ({obj.score*100:.0f}%)",tuple(obj.bounding_box[0].astype(int)-(70,0)),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.conf["DISPLAY"]["textColor"], 1)
-                    self.drawed_img = img
-
+            self.drawed_img = img
+            
             # The 25 speed limit sign has priority.
             if self.traffic_objects['SpeedLimit25'].present:
                 self.traffic_objects['SpeedLimit50'].present = False
@@ -93,9 +96,8 @@ class ObjectsDetector:
                 traffic_object.set_car_state(self.car_state)
                 traffic_object.present = False
 
-
             elapsed_time = time.time() - start_time
             if (elapsed_time < self.min_execution_time):
                 time.sleep(self.min_execution_time - elapsed_time)
-            # print(f"{self.__class__.__name__}: {1/(time.time()-start_time):.1f} FPS")
+            self.current_threads_fps[self.__class__.__name__] = 1/(time.time()-start_time)
             start_time = time.time()
