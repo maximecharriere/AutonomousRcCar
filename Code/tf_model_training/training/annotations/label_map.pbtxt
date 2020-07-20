@@ -1,0 +1,34 @@
+item {
+    id: 1
+    name: 'battery'
+}
+
+item {
+    id: 2
+    name: 'speed25'
+}
+
+item {
+    id: 3
+    name: 'speed50'
+}
+
+item {
+    id: 4
+    name: 'stop'
+}
+
+item {
+    id: 5
+    name: 'trafficLightGreen'
+}
+
+item {
+    id: 6
+    name: 'trafficLightOff'
+}
+
+item {
+    id: 7
+    name: 'trafficLightRed'
+}

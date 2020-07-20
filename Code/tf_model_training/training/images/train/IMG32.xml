@@ -1,0 +1,38 @@
+<annotation>
+	<folder>all</folder>
+	<filename>IMG32.jpg</filename>
+	<path>C:\Users\maxim\OneDrive\HEIG-VD\Travail de bachelor\AutonomousRcCar\autonomouscar\tf_model_training\training\images\all\IMG32.jpg</path>
+	<source>
+		<database>Unknown</database>
+	</source>
+	<size>
+		<width>640</width>
+		<height>480</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>trafficLightRed</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>73</xmin>
+			<ymin>109</ymin>
+			<xmax>136</xmax>
+			<ymax>168</ymax>
+		</bndbox>
+	</object>
+	<object>
+		<name>stop</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>492</xmin>
+			<ymin>105</ymin>
+			<xmax>547</xmax>
+			<ymax>161</ymax>
+		</bndbox>
+	</object>
+</annotation>
