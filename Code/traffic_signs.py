@@ -24,7 +24,7 @@ class _ITrafficSignProcessor:
 class Battery(_ITrafficSignProcessor):
     def set_car_state(self, car_state):
         if self.present:
-            print("Battery managment -> Not implemented")
+            print("Battery charging station -> Not implemented")
 
 class TrafficLight(_ITrafficSignProcessor):
     def __init__(self, conf, color):
