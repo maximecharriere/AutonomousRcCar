@@ -1,5 +1,5 @@
 from actuator_controller import SteeringController, SpeedController
-from my_camera import PicameraController
+from camera_controller import PicameraController
 from ultrasonic_sensor import UltrasonicSensor
 import time 
 class Car():

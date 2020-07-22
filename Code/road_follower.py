@@ -4,8 +4,8 @@ import numpy as np
 import time 
 from scipy import stats
 from threading import Thread
-from perspective_warp import ImgWarper
-from camera_calibration import ImgRectifier
+from img_warper import ImgWarper
+from img_rectifier import ImgRectifier
 
 class RoadFollower():
     # Var to stop the thread
