@@ -1,14 +1,12 @@
+import sys, getopt, os,inspect
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+
 import cv2
-import logging
-import datetime
 import time
 from edgetpu.detection.engine import DetectionEngine
-from edgetpu.utils import dataset_utils, image_processing
 from PIL import Image
 from traffic_signs import *
 from threading import Thread
-
-_SHOW_IMAGE = False
 
 
 class ObjectsDetector:
@@ -25,13 +23,13 @@ class ObjectsDetector:
         self.current_threads_fps = current_threads_fps
         
         # Initialize engine.
-        self.engine = DetectionEngine(conf['OBJECT_DETECTION']['model_fname'])
+        self.engine = DetectionEngine(os.path.join(currentdir, conf['OBJECT_DETECTION']['model_fname']))
 
 
         # Init a dictonary with obj_id and obj_label as key, and the corresponding traffic object class as value
         self.traffic_objects = dict.fromkeys([0, 'Battery'], Battery(conf)) 
-        self.traffic_objects.update(dict.fromkeys([1, 'SpeedLimit25'], SpeedLimit(conf, 25)))
-        self.traffic_objects.update(dict.fromkeys([2, 'SpeedLimit50'], SpeedLimit(conf, 50)))
+        self.traffic_objects.update(dict.fromkeys([1, 'SpeedLimit25'], SpeedLimit(conf, conf['CAR']['real_speed_25'])))
+        self.traffic_objects.update(dict.fromkeys([2, 'SpeedLimit50'], SpeedLimit(conf, conf['CAR']['real_speed_50'])))
         self.traffic_objects.update(dict.fromkeys([3, 'StopSign'], StopSign(conf)))
         self.traffic_objects.update(dict.fromkeys([4, 'TrafficLightGreen'], TrafficLight(conf, 'green')))
         self.traffic_objects.update(dict.fromkeys([5, 'TrafficLightOff'], TrafficLight(conf, 'off')))

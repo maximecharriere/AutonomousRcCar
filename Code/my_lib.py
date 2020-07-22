@@ -17,7 +17,6 @@
 ## Work exactly like Arduino's map function
 # https://www.arduino.cc/reference/en/language/functions/math/map/
 
-import picamera
 import matplotlib.pyplot as plt
 import cv2
 import numpy as np

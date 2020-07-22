@@ -12,28 +12,21 @@
 # -------------------------------- Description --------------------------------
 #   Main file to compute the road detection
 # -------------------------------- Description --------------------------------
+import sys, getopt, os,inspect
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
 import time
-import math
-from datetime import datetime
-import picamera
-import picamera.array
-import asyncio
 from evdev import InputDevice, categorize, ecodes, util
-import numpy as np
 import cv2
-import matplotlib.pyplot as plt
 import my_lib
 from road_follower import RoadFollower
 from objects_detector import ObjectsDetector
 from obstacle_detector import ObstacleDetector
 from car import Car
-from scipy import stats
 import threading
 import copy
-import os
 
-CONFIG_FNAME = '/home/pi/Documents/AutonomousRcCar/autonomouscar/conf.yaml'
+CONFIG_FNAME = os.path.join(currentdir, 'conf.yaml')
 
 class AutonomousCarApp():
     def __init__(self, conf_fname):
@@ -47,7 +40,7 @@ class AutonomousCarApp():
                 'obstacle'    : False,
                 'manual_stop' : False
             },
-            'speed_limit'     : self.conf["CAR"]["default_speed_limit"]
+            'speed_limit'     : self.conf["CAR"]["real_speed_25"]
         }
         self.car_state_history = copy.deepcopy(self.car_state)
         self.threads_fps = {
@@ -57,7 +50,7 @@ class AutonomousCarApp():
             'ObjectsDetector'   : 0,
             'ObstacleDetector'  : 0
         }
-        self.min_execution_time = 1/30
+        self.min_execution_time = 1/self.conf["APP"]["max_fps"]
         #Objects
         self.car = Car(
             conf = self.conf, 
@@ -94,14 +87,14 @@ class AutonomousCarApp():
             cv2.namedWindow("RoadFollower", cv2.WINDOW_NORMAL)
                 
         with self.car: #start motor, steering commande and camera
-            # with self.roadFollower: #start the road following algorithm
+            with self.roadFollower: #start the road following algorithm
                 with self.objectDetector: #start the sign detector algorithm
-                    # with self.obstacleDetector: #start the obstacle detector algorithm
+                    with self.obstacleDetector: #start the obstacle detector algorithm
                         print('----------------  ACTIVE THREAD  ----------------')
                         for thread in threading.enumerate():
                             print(thread)
 
-                        # start_time = time.time()
+                        start_time = time.time()
                         while True:
                             # Controller input
                             if self.controller:
@@ -113,19 +106,27 @@ class AutonomousCarApp():
                                                     self.car_state['stop_flags']['manual_stop'] = True
                                                 elif  event.code == ecodes.ecodes[self.conf["CONTROLLER"]["btn_start"]]:
                                                     self.car_state['stop_flags']['manual_stop'] = False
+                                        
+                                        elif event.type == ecodes.EV_ABS:
+                                            if  event.code == ecodes.ABS_HAT0Y:
+                                                if event.value == 1: #Croix / Bas
+                                                    self.objectDetector.traffic_objects['SpeedLimit25'].speed_limit -= 0.02
+                                                    self.car_state['speed_limit'] -= 0.02
+                                                elif  event.value == -1: #Croix / Haut
+                                                    self.objectDetector.traffic_objects['SpeedLimit25'].speed_limit += 0.02
+                                                    self.car_state['speed_limit'] += 0.02
                                 except BlockingIOError:
                                     pass
                             
                             ## Car speed
                             if (self.car_state_history != self.car_state):
-                                # print(self.car_state)
                                 self.car_state_history = copy.deepcopy(self.car_state)
                                 if (any(self.car_state['stop_flags'].values())):
-                                    print('STOP', self.car_state)
+                                    # print('STOP', self.car_state)
                                     self.car.speedCtrl.stop()
                                 else:
-                                    print('START', self.car_state)
-                                    self.car.speedCtrl.speed(my_lib.map(self.car_state['speed_limit'], 0,50,0,1))
+                                    # print('START', self.car_state)
+                                    self.car.speedCtrl.speed(self.car_state['speed_limit'])
 
                             # Show result with plots
                             if self.conf["DISPLAY"]["show_plots"]:
@@ -139,11 +140,11 @@ class AutonomousCarApp():
                                 break
 
                             
-                            # elapsed_time = time.time() - start_time
-                            # if (elapsed_time < self.min_execution_time):
-                            #     time.sleep(self.min_execution_time - elapsed_time)
-                            # self.threads_fps['Main'] = 1/(time.time()-start_time)
-                            # start_time = time.time()
+                            elapsed_time = time.time() - start_time
+                            if (elapsed_time < self.min_execution_time):
+                                time.sleep(self.min_execution_time - elapsed_time)
+                            self.threads_fps['Main'] = 1/(time.time()-start_time)
+                            start_time = time.time()
 
                             # Print thread FPS
                             if self.conf['DISPLAY']['show_fps']:

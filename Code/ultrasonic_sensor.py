@@ -3,6 +3,10 @@ import RPi.GPIO as GPIO
 import time
 
 SOUND_SPEED = 343 #m/s
+TIMEOUT = 0.1 #s
+
+class NoEcho(Exception):
+    pass
 
 class UltrasonicSensor():
     def __init__(self, pin_trigger, pin_echo):
@@ -26,14 +30,19 @@ class UltrasonicSensor():
         GPIO.output(self.pin_trigger, False)
 
         # save StartTime
-        while GPIO.input(self.pin_echo) == 0:
-            pass
+        timeout_start = time.time()
+        while GPIO.input(self.pin_echo) == 0:  
+            if (time.time() - timeout_start) > TIMEOUT:
+                raise NoEcho()
         start_time = time.time()
+        
     
         # save time of arrival
         while GPIO.input(self.pin_echo) == 1:
             pass
         stop_time = time.time()
+
+        
 
         # time difference between start and arrival
         time_elapsed = stop_time - start_time

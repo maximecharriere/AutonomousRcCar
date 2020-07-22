@@ -4,6 +4,9 @@ PIN: # Pin declaration with BCM format
     proximity_trigger: 23
     proximity_echo: 24
 
+APP:
+    max_fps: 100
+    
 CAMERA:
     focal_lenght: 1.8 #mm
     sensor_shape: [3.674, 2.738] #mm
@@ -23,7 +26,7 @@ CAMERA:
 
 IMAGE_PROCESSING:
     calibration:
-        param_file: "/home/pi/Documents/AutonomousRcCar/autonomouscar/resources/cameraCalibrationParam_V2.pickle"
+        param_file: "resources/cameraCalibrationParam_V2.pickle"
     perspective_warp:
         points_resolution: [2592, 1952] #in px
         points: #in px
@@ -48,7 +51,7 @@ PROXIMITY:
     max_fps: 20
 
 OBJECT_DETECTION:
-    model_fname: '/home/pi/Documents/AutonomousRcCar/autonomouscar/resources/model_quantized_edgetpu_V2.tflite'
+    model_fname: 'resources/model_quantized_edgetpu_V2.tflite'
     match_threshold: 0.3 #%
     max_obj: 3
     detection_distance: 500 #mm
@@ -61,11 +64,12 @@ OBJECT_DETECTION:
     max_fps: 20
 
 CAR:
-    speed_pwm_dc_min: 1.2
+    speed_pwm_dc_min: 1.4
     speed_pwm_dc_max: 1.8
     steering_pwm_dc_min: 1.2
     steering_pwm_dc_max: 1.8
-    default_speed_limit: 25
+    real_speed_25: 0.35 #from 0 to 1
+    real_speed_50: 0.4 #from 0 to 1
 
 CONTROLLER:
     event_filename: '/dev/input/event0'
@@ -73,7 +77,7 @@ CONTROLLER:
     btn_stop: "BTN_X"
 
 DISPLAY:
-    show_plots: True
+    show_plots: False
     show_cam_preview: False
     show_fps: False
     linecolor_right: [255,0,255] #rgb

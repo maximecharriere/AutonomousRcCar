@@ -1,5 +1,4 @@
 from threading import Timer
-import logging
 
 
 class _ITrafficSignProcessor:

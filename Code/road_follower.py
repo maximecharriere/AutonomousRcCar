@@ -1,3 +1,6 @@
+import sys, getopt, os,inspect
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+
 import my_lib
 import cv2
 import numpy as np
@@ -20,7 +23,7 @@ class RoadFollower():
         self.current_threads_fps = current_threads_fps
         self.imgRectifier = ImgRectifier(
             imgShape = (self.camera.resolution.height, self.camera.resolution.width),
-            calParamFile = self.conf["IMAGE_PROCESSING"]["calibration"]["param_file"])
+            calParamFile = os.path.join(currentdir, self.conf["IMAGE_PROCESSING"]["calibration"]["param_file"]))
         self.imgWarper = ImgWarper(
             imgShape = (camera.resolution.height, camera.resolution.width), 
             corners = self.conf["IMAGE_PROCESSING"]["perspective_warp"]["points"], 

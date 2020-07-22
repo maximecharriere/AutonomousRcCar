@@ -14,11 +14,8 @@
 #   a picture with with parameters
 ## -------------------------------- Description --------------------------------
 
-import numpy as np
 import cv2
-import glob
 import pickle
-import matplotlib.pyplot as plt
 
 
 class ImgRectifier():

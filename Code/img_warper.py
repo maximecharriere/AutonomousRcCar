@@ -1,6 +1,5 @@
 import numpy as np
 import cv2
-import matplotlib.pyplot as plt
 
 class ImgWarper():
     def __init__(self, imgShape, corners, realWorldCornersDistance, margin_pc=[0,0,0,0], cornersImageResolution = None): #Inspired from https://www.pyimagesearch.com/2014/08/25/4-point-opencv-getperspective-transform-example/       

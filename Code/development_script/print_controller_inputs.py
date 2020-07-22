@@ -35,7 +35,7 @@ def print_help():
     print(f"{os.path.basename(__file__)} -e <Controller event filename>")
 
 def main(argv):
-    event_filename = '/dev/input/event3'
+    event_filename = '/dev/input/event0'
     #Get arguments
     try:
        opts, args = getopt.getopt(argv,"h?e:",["help","event="])
