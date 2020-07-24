@@ -1,4 +1,11 @@
-#inspired by https://github.com/jrosebr1/imutils/blob/master/imutils/video/pivideostream.py
+#!/usr/bin/env python3
+
+# ----------------------------------- Infos -----------------------------------
+#   Author:            Maxime Charriere
+#   Project:           Autonomous RC Car
+#   Link:              https://github.com/maximecharriere/AutonomousRcCar
+# ----------------------------------- Infos -----------------------------------
+
 
 # import the necessary packages
 from picamera.array import PiRGBArray

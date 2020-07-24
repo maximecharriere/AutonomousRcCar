@@ -1,4 +1,11 @@
 #!/usr/bin/env python3
+
+# ----------------------------------- Infos -----------------------------------
+#   Author:            Maxime Charriere
+#   Project:           Autonomous RC Car
+#   Link:              https://github.com/maximecharriere/AutonomousRcCar
+# ----------------------------------- Infos -----------------------------------
+
 import os
 import RPi.GPIO as GPIO
 

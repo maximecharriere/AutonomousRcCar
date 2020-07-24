@@ -1,3 +1,11 @@
+#!/usr/bin/env python3
+
+# ----------------------------------- Infos -----------------------------------
+#   Author:            Maxime Charriere
+#   Project:           Autonomous RC Car
+#   Link:              https://github.com/maximecharriere/AutonomousRcCar
+# ----------------------------------- Infos -----------------------------------
+
 import time
 from threading import Thread
 from ultrasonic_sensor import NoEcho

@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
 
-## ----------------------------------- Infos -----------------------------------
+# ----------------------------------- Infos -----------------------------------
 #   Author:            Maxime Charriere
 #   Project:           Autonomous RC Car
-#   File:              manualDrive.py
 #   Link:              https://github.com/maximecharriere/AutonomousRcCar
-#   Creation date :    20.03.2020
-#   Last modif date:   01.05.2020
-## ----------------------------------- Infos -----------------------------------
+# ----------------------------------- Infos -----------------------------------
 
 ## -------------------------------- Description --------------------------------
 #   Read inputs from controller to drive the car

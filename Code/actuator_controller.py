@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
 
-## ----------------------------------- Infos -----------------------------------
+# ----------------------------------- Infos -----------------------------------
 #   Author:            Maxime Charriere
 #   Project:           Autonomous RC Car
-#   File:              PwmController.py
 #   Link:              https://github.com/maximecharriere/AutonomousRcCar
-#   Creation date :    12.04.2020
-#   Last modif date:   01.05.2020
-## ----------------------------------- Infos -----------------------------------
+# ----------------------------------- Infos -----------------------------------
 
 ## -------------------------------- Description --------------------------------
 #   This file define the classes to control the speed and the steering of the

@@ -3,11 +3,9 @@
 # ----------------------------------- Infos -----------------------------------
 #   Author:            Maxime Charriere
 #   Project:           Autonomous RC Car
-#   File:              app.py
 #   Link:              https://github.com/maximecharriere/AutonomousRcCar
-#   Creation date :    26.03.2020
-#   Last modif date:   04.05.2020
 # ----------------------------------- Infos -----------------------------------
+
 
 # -------------------------------- Description --------------------------------
 #   Main file to compute the road detection
