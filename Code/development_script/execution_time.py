@@ -2,92 +2,110 @@ import timeit
 
 setup_code = '''
 import sys
-sys.path.append('..')
-from autonomouscar import camera_calibration, perspective_warp, my_lib
-import numpy as np
+sys.path.insert(0,'/home/pi/Documents/Code')
+
 import cv2
+from PIL import Image
+from road_follower import RoadFollower
+from objects_detector import ObjectsDetector
+from obstacle_detector import ObstacleDetector
 from scipy import stats
+import my_lib
+import numpy as np
+from car import Car
 
-## Parameters
-camResolution=(640, 480)
-min_line_area = 0.5 #in  of img area
-low_H = 0
-low_S = 0
-low_V = 0
-high_H = 180
-high_S = 255
-high_V = 80
-perspectiveWarpPoints = [(173, 1952),(2560, 1952),(870, 920),(1835, 920)]
-perspectiveWarpPointsResolution = (2592, 1952)
+conf = my_lib.load_configuration('/home/pi/Documents/Code/conf.yaml')
+car_state = {
+            'stop_flags': {
+                'no_road'     : False,
+                'stop_sign'   : False,
+                'red_light'   : False,
+                'obstacle'    : False,
+                'manual_stop' : False
+            },
+            'speed_limit'     : conf["CAR"]["real_speed_25"]
+        }
 
-frameBGR = cv2.imread("/home/pi/Documents/AutonomousRcCar/autonomouscar/resources/executionTimeTest_sample_x480.jpg",cv2.IMREAD_COLOR)
-frameBGR_calibrate = camera_calibration.undistort(frameBGR, calParamFile="/home/pi/Documents/AutonomousRcCar/autonomouscar/resources/cameraCalibrationParam_V2.pickle",crop=True)
-frameBGR_warped = perspective_warp.warp(frameBGR_calibrate, perspectiveWarpPoints, [80, 0, 80, 0], perspectiveWarpPointsResolution)
-frameHSV = cv2.cvtColor(frameBGR_warped, cv2.COLOR_BGR2HSV)
-frameThreshold = cv2.inRange(frameHSV,  (low_H, low_S, low_V), (high_H, high_S, high_V))
-frameThreshold = cv2.erode(frameThreshold,kernel=np.ones((3,3)))
-_, labels_img, blobStats, _  = cv2.connectedComponentsWithStats(frameThreshold, ltype=cv2.CV_16U)
-line_label = np.where(blobStats[1:,cv2.CC_STAT_AREA] >= min_line_area)[0]+1
+car = Car(conf = conf)
+roadFollower = RoadFollower(
+    conf = conf,
+    camera = car.camera, 
+    steeringCtrl = car.steeringCtrl, 
+    car_state = car_state)
+objectDetector = ObjectsDetector(
+    conf = conf, 
+    camera  = car.camera, 
+    car_state = car_state,
+    max_fps = 2000)
+
+# car.start()
+img = cv2.imread("/home/pi/Documents/Code/resources/executionTimeTest_sample_x240.jpg")
+img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 '''
 
 code_calibration = '''
-frameBGR_calibrate = camera_calibration.undistort(frameBGR, calParamFile="/home/pi/Documents/AutonomousRcCar/autonomouscar/resources/cameraCalibrationParam_V2.pickle",crop=True)
+roadFollower.imgRectifier.undistort(img)
 '''
 
 code_warp = '''
-frameBGR_warped = perspective_warp.warp(frameBGR_calibrate, perspectiveWarpPoints, [80, 0, 80, 0], perspectiveWarpPointsResolution)'''
+roadFollower.imgWarper.warp(img)
+'''
 
 code_BgrToHsv = '''
-frameHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 '''
 
 code_threshold = '''
-frameThreshold = cv2.inRange(frameHSV,  (low_H, low_S, low_V), (high_H, high_S, high_V))
-'''
-
-code_erode = '''
-frameThreshold = cv2.erode(frameThreshold,kernel=np.ones((3,3)))
+my_lib.inRangeHSV(
+            src = img, 
+            lowerb = conf["IMAGE_PROCESSING"]["hsv_threshold"]["low"], 
+            upperb = conf["IMAGE_PROCESSING"]["hsv_threshold"]["high"])
 '''
 
 code_connectedComponents = '''
-retval, labels_img, stats, centroids = cv2.connectedComponentsWithStats(frameThreshold, ltype=cv2.CV_16U)
+cv2.connectedComponentsWithStats(img, ltype=cv2.CV_16U)
 '''
 
 code_polyfit = '''
-coef = []
-stdDeviation = []
+all_coef = []
+std_deviation = []
 for i in range(line_label.size):
-    y, x = np.where(labels_img == line_label[i])
+    y, x = np.where(img_labeled == line_label[i])
+    # Polyfit
     p, V, = np.polyfit(y, x, 1, cov = True) # inversion of x and y because lines are mostly vertical
-    coef.append(p)
-    stdDeviation.append(np.sqrt(np.diag(V)))
+    std_err = np.sqrt(V[0,0])
+    all_coef.append(p)
+    std_deviation.append(std_err)
 '''
 
 code_linregress = '''
-coef = []
-stdDeviation = []
+all_coef = []
+std_deviation = []
 for i in range(line_label.size):
-    y, x = np.where(labels_img == line_label[i])
-    slope, intercept, r_value, p_value, std_err = stats.linregress(y, x) # inversion of x and y because lines are mostly vertical
-    coef.append((slope, intercept))
-    stdDeviation.append(std_err)
+    y, x = np.where(img_labeled == line_label[i])
+    # Linregress
+    slope, intercept, r_value, p_value, std_err = stats.linregress(y, x)
+    p = (slope, intercept)
+    all_coef.append(p)
+    std_deviation.append(std_err)
 '''
 
-code_full = '''
-frameBGR_calibrate = cameraCalibration.undistort(img, calParamFile="/home/pi/Documents/AutonomousRcCar/Code/CameraCalibration/cameraCalibrationParam_V2.pickle",crop=True)
-frameBGR_warped = perspectiveWarp.perspective_warp(frameBGR_calibrate, perspectiveWarpPoints, [30, 0, 30, 0], perspectiveWarpPointsResolution)
-frameHSV = cv2.cvtColor(frameBGR_warped, cv2.COLOR_BGR2HSV)
-frameThreshold = cv2.inRange(frameHSV,  (low_H, low_S, low_V), (high_H, high_S, high_V))
-frameThreshold = cv2.erode(frameThreshold,kernel=np.ones((3,3))) #to minimise the number of components and speed processing time (à mesurer)
-retval, labels_img, stats, centroids = cv2.connectedComponentsWithStats(frameThreshold, ltype=cv2.CV_16U) #https://docs.opencv.org/master/d3/dc0/group__imgproc__shape.html
-line_label = np.where(stats[1:,cv2.CC_STAT_AREA] >= min_line_area*frameThreshold.size/100)[0]+1 #the "1" is to exclude label 0 who is the background 
-coef = []
-for i in range(line_label.size):
-    y,x  = np.where(labels_img==line_label[i])
-    coef.append(np.polyfit(y, x, 1)) #inversion of x and y because lines are mostly vertical
-coefNp = np.array(coef)
-slop = np.mean(coefNp[:,0])
+code_obstacleDetector = '''
+car.ultrasonicSensor.getDistance()
+'''
+
+code_objectDetector = '''
+objectDetector.engine.detect_with_image(
+                Image.fromarray(car.camera.current_frame), 
+                keep_aspect_ratio =False, 
+                relative_coord=False,
+                threshold=conf['OBJECT_DETECTION']['match_threshold'],
+                top_k=conf['OBJECT_DETECTION']['max_obj'])
+'''
+
+code_getSteering = '''
+roadFollower._getSteering(img)
 '''
 
 
-print(timeit.timeit(stmt=code_linregress, setup=setup_code, number=1000))
+print(timeit.timeit(stmt=code_getSteering, setup=setup_code, number=1000))

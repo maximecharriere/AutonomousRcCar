@@ -15,7 +15,7 @@ class ObjectsDetector:
     # Var to stop the thread
     stopped = False
     drawed_img = None
-    def __init__(self, conf, camera, car_state, max_fps, current_threads_fps):
+    def __init__(self, conf, camera, car_state, max_fps, current_threads_fps=None):
         self.camera = camera
         self.car_state = car_state
         self.conf = conf

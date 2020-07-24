@@ -15,7 +15,7 @@ class RoadFollower():
     stopped = False
     drawed_img = None
 
-    def __init__(self, conf, camera, steeringCtrl, car_state, current_threads_fps):
+    def __init__(self, conf, camera, steeringCtrl, car_state, current_threads_fps=None):
         self.camera = camera
         self.steeringCtrl = steeringCtrl
         self.conf = conf
@@ -66,8 +66,9 @@ class RoadFollower():
             # Check if no lines is found from a long time and stop car
             self.car_state['stop_flags']['no_road'] = (self.slop_history['lastUpdate'] > self.conf["IMAGE_PROCESSING"]["line_filtering"]["history_size"])
 
-            self.current_threads_fps[self.__class__.__name__] = 1/(time.time()-start_time)
-            start_time = time.time()
+            if self.current_threads_fps is not None:
+                self.current_threads_fps[self.__class__.__name__] = 1000*(time.time()-start_time)
+                start_time = time.time()
 
 
     def _getSteering(self, img, draw_result = False):
@@ -217,8 +218,5 @@ class RoadFollower():
                     blobs_stats[line_label[i],cv2.CC_STAT_TOP] + int(blobs_stats[line_label[i],cv2.CC_STAT_HEIGHT]/2)
                 )
                 drawed_result = cv2.putText(drawed_result,f"SD = {std_deviation[i]:.4f}",text_org, cv2.FONT_HERSHEY_SIMPLEX, 1, self.conf["DISPLAY"]["textColor"], 2)
-                self.drawed_img = drawed_result
+            self.drawed_img = drawed_result
         return car_steering_norm
-
-
-        

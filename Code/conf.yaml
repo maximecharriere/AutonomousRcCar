@@ -11,9 +11,9 @@ CAMERA:
     focal_lenght: 1.8 #mm
     sensor_shape: [3.674, 2.738] #mm
     parameters:
-        resolution: [640, 480]
-        framerate: 30
-        sensor_mode: ~
+        resolution: [320, 240] #[640, 480] #[2592,1944]  #
+        framerate: ~
+        sensor_mode: 2
         awb_mode: 'auto'
         awb_gains: ~
         exposure_mode: 'auto'
@@ -41,7 +41,7 @@ IMAGE_PROCESSING:
         high: [40,215,255]
     line_filtering: 
         min_area: 0.1 # in % of img area
-        max_SD: 0.008 #standard deviation
+        max_SD: 0.002 #standard deviation
         slop_margin: 0.5
         history_size: 5
     line_spacing: 574
@@ -79,9 +79,9 @@ CONTROLLER:
 DISPLAY:
     show_plots: False
     show_cam_preview: False
-    show_fps: False
-    linecolor_right: [255,0,255] #rgb
-    lineColor_left: [255,255,0] #rgb
+    show_fps: True
+    linecolor_right: [0,255,0] #[255,0,255] #rgb
+    lineColor_left: [0,255,0] #[255,255,0] #rgb
     lineColor_rejected: [255,0,0] #rgb
     textColor: [0,255,255] #rgb
 
