@@ -1,11 +1,3 @@
-#!/usr/bin/env python3
-
-# ----------------------------------- Infos -----------------------------------
-#   Author:            Maxime Charriere
-#   Project:           Autonomous RC Car
-#   Link:              https://github.com/maximecharriere/AutonomousRcCar
-# ----------------------------------- Infos -----------------------------------
-
 import numpy as np
 import cv2
 
@@ -28,7 +20,7 @@ class ImgWarper():
         self.margin_pxs[1::2] = (margin_pc[1::2]*imgShape[0] / 100.0).astype(int)
 
         # obtain a consistent order of the points and unpack them individually
-        corners= _orderCorners(corners)
+        corners = _orderCorners(corners)
         (tl, tr, br, bl) = corners
 
         ## Compute the ratio between the hight and width of the

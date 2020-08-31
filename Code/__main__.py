@@ -1,4 +1,4 @@
-from Code import app
+from autonomouscar import app
 
 if __name__ == '__main__':
     app.start()

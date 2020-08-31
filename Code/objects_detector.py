@@ -1,11 +1,3 @@
-#!/usr/bin/env python3
-
-# ----------------------------------- Infos -----------------------------------
-#   Author:            Maxime Charriere
-#   Project:           Autonomous RC Car
-#   Link:              https://github.com/maximecharriere/AutonomousRcCar
-# ----------------------------------- Infos -----------------------------------
-
 import sys, getopt, os,inspect
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
@@ -39,9 +31,9 @@ class ObjectsDetector:
         self.traffic_objects.update(dict.fromkeys([1, 'SpeedLimit25'], SpeedLimit(conf, conf['CAR']['real_speed_25'])))
         self.traffic_objects.update(dict.fromkeys([2, 'SpeedLimit50'], SpeedLimit(conf, conf['CAR']['real_speed_50'])))
         self.traffic_objects.update(dict.fromkeys([3, 'StopSign'], StopSign(conf)))
-        self.traffic_objects.update(dict.fromkeys([4, 'TrafficLightGreen'], TrafficLight(conf, 'green')))
-        self.traffic_objects.update(dict.fromkeys([5, 'TrafficLightOff'], TrafficLight(conf, 'off')))
-        self.traffic_objects.update(dict.fromkeys([6, 'TrafficLightRed'], TrafficLight(conf, 'red')))
+        self.traffic_objects.update(dict.fromkeys([4, 'TrafficLightGreen'], TrafficLight(conf, 'Green')))
+        self.traffic_objects.update(dict.fromkeys([5, 'TrafficLightOff'], TrafficLight(conf, 'Off')))
+        self.traffic_objects.update(dict.fromkeys([6, 'TrafficLightRed'], TrafficLight(conf, 'Red')))
 
 
     def __enter__(self):
@@ -78,9 +70,6 @@ class ObjectsDetector:
                 traffic_obj = self.traffic_objects[obj.label_id]
                 if traffic_obj.is_nearby(obj):
                     traffic_obj.present = True
-                    # print(traffic_obj.label)
-            # if (len(objs) > 0):
-            #     print("")
 
                 # Print and draw detected objects.
                 if self.conf["DISPLAY"]["show_plots"]:

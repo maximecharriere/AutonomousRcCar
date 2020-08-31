@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 
-# ----------------------------------- Infos -----------------------------------
+## ----------------------------------- Infos -----------------------------------
 #   Author:            Maxime Charriere
 #   Project:           Autonomous RC Car
+#   File:              PwmController.py
 #   Link:              https://github.com/maximecharriere/AutonomousRcCar
-# ----------------------------------- Infos -----------------------------------
+#   Creation date :    12.04.2020
+#   Last modif date:   01.05.2020
+## ----------------------------------- Infos -----------------------------------
 
 ## -------------------------------- Description --------------------------------
 #   This file define the classes to control the speed and the steering of the
@@ -63,7 +66,7 @@ class SpeedController(_PwmActuator):
         #the car don't go backward, but do and emergency stop
         
         if (self.pwm_ctrl.duty_cycle > self.NeutralDutyCycle):
-            self.pwm_ctrl.set_duty_cycle(self.MinDutyCycle)
+            self.pwm_ctrl.set_duty_cycle(1)
             time.sleep(0.3) #wait the car to be stopped
         self.pwm_ctrl.set_duty_cycle(self.NeutralDutyCycle)
 
@@ -73,47 +76,4 @@ class SpeedController(_PwmActuator):
         0  = STOP
         1 = MAX SPEED FORWARD"""
         duty_cycle = my_lib.map(speed,-1,1,self.MinDutyCycle,self.MaxDutyCycle,limit=True)
-        print(duty_cycle)
         self.pwm_ctrl.set_duty_cycle(duty_cycle)
-
-
-
-if __name__ == "__main__":
-    # Test code
-    from time import sleep
-    import numpy as np
-
-    print("Testing of steering controller")
-    SteeringCtrl = SteeringController(pin=19, minDutyCycle=1.2, maxDutyCycle=1.8, hardware=True)
-    print("right > left")
-    for angle in np.linspace(-1, 1, num=100, endpoint=True):
-        SteeringCtrl.angle(angle)
-        print(f"    {angle}")
-        sleep(0.05)
-    print("\nleft > right")
-    for angle in np.linspace(1, -1, num=100, endpoint=True):
-        SteeringCtrl.angle(angle)
-        print(f"    {angle}")
-        sleep(0.05)
-    print("\nForward")
-    SteeringCtrl.angle(0)
-
-    print("\n\nTesting of speed controller")
-    for i in range(5):
-        print("!!!!! WARNING : THE CAR GOING TO MOVE FAST !!!!!")
-        sleep(1)
-    SpeedCtrl = SpeedController(pin=18, minDutyCycle=1.2, maxDutyCycle=1.8, hardware=True)
-    print("Forward")
-    for speed in np.linspace(0, 1, num=50, endpoint=True):
-        SpeedCtrl.speed(speed)
-        print(f"    {speed}")
-        sleep(0.05)
-    print("\nStop")
-    SpeedCtrl.stop()
-    print("\nBackward")
-    for speed in np.linspace(0, -1, num=50, endpoint=True):
-        SpeedCtrl.speed(speed)
-        print(f"    {speed}")
-        sleep(0.05)
-    print("\nStop")
-    SpeedCtrl.stop()

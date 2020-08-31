@@ -5,13 +5,13 @@ PIN: # Pin declaration with BCM format
     proximity_echo: 24
 
 APP:
-    max_fps: 100
+    max_fps: 50
     
 CAMERA:
     focal_lenght: 1.8 #mm
     sensor_shape: [3.674, 2.738] #mm
     parameters:
-        resolution: [320, 240] #[640, 480] #[2592,1944]  #
+        resolution:  [640, 480] #[2592,1944]  #[320, 240] #
         framerate: ~
         sensor_mode: 2
         awb_mode: 'auto'
@@ -24,37 +24,38 @@ CAMERA:
         saturation: ~
         sharpness: ~
 
-IMAGE_PROCESSING:
+ROAD_FOLLOWING:
+    img_resolution: [160, 120] #[640, 480] # #[2592, 1944] #
     calibration:
         param_file: "resources/cameraCalibrationParam_V2.pickle"
     perspective_warp:
-        points_resolution: [2592, 1952] #in px
+        points_resolution: [2592, 1944] #[2592, 1952] #[640, 480] # #in px
         points: #in px
-            - [896, 920]
-            - [1819, 925]
-            - [2461, 1800]
-            - [262, 1803]
+            - [880, 913] #[896, 920] #[265, 168] #
+            - [1846, 907] #[1819, 925] #[406, 168] #
+            - [2547, 1911] #[2461, 1800] #[635,480] #
+            - [202, 1913] #[262, 1803] #[45,480] #
         realworld_line_distance: [50,50] #[width, high] in cm
-        warp_margin: [80, 0, 80, 10] #[left, top, right, bottom] in % of the base image
+        warp_margin: [80, 100, 80, 5] #[left, top, right, bottom] in % of the base image
     hsv_threshold:
-        low: [2,60,80] # [h,s,v]
-        high: [40,215,255]
+        low: [2,60,110] # [h,s,v]
+        high: [47,215,255]
     line_filtering: 
         min_area: 0.1 # in % of img area
-        max_SD: 0.002 #standard deviation
+        max_SD: 0.005 #standard deviation
         slop_margin: 0.5
         history_size: 5
-    line_spacing: 574
+    line_spacing: 89.7 #% of img width
 
 PROXIMITY:
-    min_distance: 0.5 #meter
+    min_distance: 700 #mm
     max_fps: 20
 
 OBJECT_DETECTION:
     model_fname: 'resources/model_quantized_edgetpu_V2.tflite'
     match_threshold: 0.3 #%
     max_obj: 3
-    detection_distance: 500 #mm
+    detection_distance: 800 #mm
     obj_height: #mm
         StopSign: 80
         TrafficLight: 80

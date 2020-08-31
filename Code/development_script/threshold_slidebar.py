@@ -27,25 +27,24 @@ import picamera
 import picamera.array
 import numpy as np
 import time
-import camera_calibration, perspective_warp, my_lib
+import my_lib
+from img_warper import ImgWarper
+from img_rectifier import ImgRectifier
+from camera_controller import PicameraController
 
-camResolution=(640, 480)
+CONFIG_FNAME = os.path.join(parentdir, 'conf.yaml')
+conf = my_lib.load_configuration(CONFIG_FNAME)
 
 max_value = 255
 max_value_H = 360//2
 
-low_H = 2#175
-low_S = 90
-low_V = 80 #50
-high_H = 40
-high_S = 215
-high_V = 255
-# low_H = 0
-# high_H = max_value_H
-# low_S = 0
-# high_S = max_value
-# low_V = 0
-# high_V = max_value
+low_H = conf["ROAD_FOLLOWING"]["hsv_threshold"]["low"][0]
+low_S = conf["ROAD_FOLLOWING"]["hsv_threshold"]["low"][1]
+low_V = conf["ROAD_FOLLOWING"]["hsv_threshold"]["low"][2]
+high_H = conf["ROAD_FOLLOWING"]["hsv_threshold"]["high"][0]
+high_S = conf["ROAD_FOLLOWING"]["hsv_threshold"]["high"][1]
+high_V = conf["ROAD_FOLLOWING"]["hsv_threshold"]["high"][2]
+
 
 window_capture_name = 'Video Capture'
 window_detection_name = 'Object Detection'
@@ -55,9 +54,6 @@ low_V_name = 'Low V'
 high_H_name = 'High H'
 high_S_name = 'High S'
 high_V_name = 'High V'
-
-perspectiveWarpPoints = [(173, 1952),(2560, 1952),(870, 920),(1835, 920)]
-perspectiveWarpPointsResolution = (2592, 1952)
 
 ## [low]
 def on_low_H_thresh_trackbar(val):
@@ -124,41 +120,37 @@ cv.createTrackbar(low_V_name, window_detection_name , low_V, max_value, on_low_V
 cv.createTrackbar(high_V_name, window_detection_name , high_V, max_value, on_high_V_thresh_trackbar)
 ## [trackbar]
 
-# ## If a still image is set
-# cap = cv.VideoCapture("/home/pi/Documents/AutonomousRcCar/Images/ConfigCamera/2020-04-14_14-15-34_cts-100_DRC-high_sat-100_sharp-100_awbr-1.3_awbb-1.6_expMode-auto_expSpeed-30569.jpg") #args.camera
-# ret, frame = cap.read()
-# if frame is None:
-#    break
 
 
-with picamera.PiCamera(resolution=camResolution, sensor_mode=2) as camera: 
-    with picamera.array.PiRGBArray(camera, size=camResolution) as rawCapture :
-        # (bg, rg) = camera.awb_gains
-        # camera.awb_mode = 'off'
-        # camera.awb_gains = (1, 211/128)#(111/128, 13/8)
-        # camera.contrast=50
-        # camera.saturation=100
-        # camera.sharpness=0
-        ## Let time to the camera for color and exposure calibration 
-        time.sleep(1)  
 
-        for frame in camera.capture_continuous(rawCapture , format="bgr", use_video_port=True):
-            frameBGR = frame.array
-            frameBGR_calibrate = camera_calibration.undistort(frameBGR, calParamFile="/home/pi/Documents/AutonomousRcCar/autonomouscar/resources/cameraCalibrationParam_V2.pickle", crop=True)
-            frameBGR_warped = perspective_warp.warp(frameBGR_calibrate, perspectiveWarpPoints, (50,50), [80, 0, 80, 10], perspectiveWarpPointsResolution)
-            frameBGR_warped2 = perspective_warp.warp(frameBGR, perspectiveWarpPoints, (50,50), [80, 0, 80, 10], perspectiveWarpPointsResolution)
-            frameHSV = cv.cvtColor(frameBGR_warped, cv.COLOR_BGR2HSV)
-            frame_threshold = my_lib.inRangeHSV(frameHSV, (low_H, low_S, low_V), (high_H, high_S, high_V))
+camera = PicameraController(
+    cam_param_dict = [(arg, value) for (arg, value) in conf['CAMERA']['parameters'].items() if value != None])
+imgRectifier = ImgRectifier(
+    imgShape = camera.resolution[::-1],
+    calParamFile = os.path.join(parentdir, conf["ROAD_FOLLOWING"]["calibration"]["param_file"]))
+imgWarper = ImgWarper(
+    imgShape = camera.resolution[::-1], 
+    corners = conf["ROAD_FOLLOWING"]["perspective_warp"]["points"], 
+    realWorldCornersDistance = conf["ROAD_FOLLOWING"]["perspective_warp"]["realworld_line_distance"], 
+    margin_pc = conf["ROAD_FOLLOWING"]["perspective_warp"]["warp_margin"], 
+    cornersImageResolution = conf["ROAD_FOLLOWING"]["perspective_warp"]["points_resolution"])
 
-            ## [show]
-            cv.imshow(window_capture_name, frameBGR_warped)
-            cv.imshow(window_detection_name, frame_threshold)
-            ## [show]
+while True:
+    img = camera.capture_np()
+    img = imgRectifier.undistort(img)
+    img_warped = imgWarper.warp(img)
+    img_HSV = cv.cvtColor(img_warped, cv.COLOR_RGB2HSV)
 
-            ## [quit]
-            key = cv.waitKey(1)
-            if key == ord('q') or key == 27:
-                break
-            ## [quit]
+    img_threshold = my_lib.inRangeHSV(img_HSV, (low_H, low_S, low_V), (high_H, high_S, high_V))
 
-            rawCapture.truncate(0)
+    ## [show]
+    cv.imshow(window_capture_name, cv.cvtColor(img_warped, cv.COLOR_RGB2BGR))
+    cv.imshow(window_detection_name, img_threshold)
+    ## [show]
+
+    ## [quit]
+    key = cv.waitKey(1)
+    if key == ord('q') or key == 27:
+        break
+    ## [quit]
+

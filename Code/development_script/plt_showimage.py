@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 
-# ----------------------------------- Infos -----------------------------------
+## ----------------------------------- Infos -----------------------------------
 #   Author:            Maxime Charriere
 #   Project:           Autonomous RC Car
+#   File:              pltShowImage.py
 #   Link:              https://github.com/maximecharriere/AutonomousRcCar
-# ----------------------------------- Infos -----------------------------------
+#   Creation date :    30.05.2020
+#   Last modif date:   01.05.2020
+## ----------------------------------- Infos -----------------------------------
 
 ## -------------------------------- Description --------------------------------
 #   Simply displays the image passed as a parameter in a plt window

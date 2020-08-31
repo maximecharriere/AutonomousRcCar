@@ -1,11 +1,3 @@
-#!/usr/bin/env python3
-
-# ----------------------------------- Infos -----------------------------------
-#   Author:            Maxime Charriere
-#   Project:           Autonomous RC Car
-#   Link:              https://github.com/maximecharriere/AutonomousRcCar
-# ----------------------------------- Infos -----------------------------------
-
 import time
 from threading import Thread
 from ultrasonic_sensor import NoEcho
@@ -49,11 +41,10 @@ class ObstacleDetector:
                 distance = self.sensor.getDistance()
             except NoEcho:
                 distance  = 9999
-
             #The sensor sometimes shows the wrong distance, 
             # which may cause the car to stop when there are no obstacles.
             # So during at least N measurements an obstacle must be detected to stop the car.
-            if distance < self.min_distance:
+            if distance < self.min_distance/1000:
                 detection_count +=1
             else :
                 detection_count = 0

@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 
-# ----------------------------------- Infos -----------------------------------
+## ----------------------------------- Infos -----------------------------------
 #   Author:            Maxime Charriere
 #   Project:           Autonomous RC Car
+#   File:              cameraCalibration.py
 #   Link:              https://github.com/maximecharriere/AutonomousRcCar
-# ----------------------------------- Infos -----------------------------------
+#   Creation date :    18.04.2020
+#   Last modif date:   04.05.2020
+## ----------------------------------- Infos -----------------------------------
 
 ## -------------------------------- Description --------------------------------
 #   Privide functions to get camera calibration parameters and to undistort

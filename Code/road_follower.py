@@ -1,11 +1,3 @@
-#!/usr/bin/env python3
-
-# ----------------------------------- Infos -----------------------------------
-#   Author:            Maxime Charriere
-#   Project:           Autonomous RC Car
-#   Link:              https://github.com/maximecharriere/AutonomousRcCar
-# ----------------------------------- Infos -----------------------------------
-
 import sys, getopt, os,inspect
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
@@ -13,6 +5,7 @@ import my_lib
 import cv2
 import numpy as np
 import time 
+import math
 from scipy import stats
 from threading import Thread
 from img_warper import ImgWarper
@@ -30,17 +23,17 @@ class RoadFollower():
         self.car_state = car_state
         self.current_threads_fps = current_threads_fps
         self.imgRectifier = ImgRectifier(
-            imgShape = (self.camera.resolution.height, self.camera.resolution.width),
-            calParamFile = os.path.join(currentdir, self.conf["IMAGE_PROCESSING"]["calibration"]["param_file"]))
+            imgShape = self.conf["ROAD_FOLLOWING"]["img_resolution"][::-1],
+            calParamFile = os.path.join(currentdir, self.conf["ROAD_FOLLOWING"]["calibration"]["param_file"]))
         self.imgWarper = ImgWarper(
-            imgShape = (camera.resolution.height, camera.resolution.width), 
-            corners = self.conf["IMAGE_PROCESSING"]["perspective_warp"]["points"], 
-            realWorldCornersDistance = self.conf["IMAGE_PROCESSING"]["perspective_warp"]["realworld_line_distance"], 
-            margin_pc = self.conf["IMAGE_PROCESSING"]["perspective_warp"]["warp_margin"], 
-            cornersImageResolution = self.conf["IMAGE_PROCESSING"]["perspective_warp"]["points_resolution"])
+            imgShape = self.conf["ROAD_FOLLOWING"]["img_resolution"][::-1], 
+            corners = self.conf["ROAD_FOLLOWING"]["perspective_warp"]["points"], 
+            realWorldCornersDistance = self.conf["ROAD_FOLLOWING"]["perspective_warp"]["realworld_line_distance"], 
+            margin_pc = self.conf["ROAD_FOLLOWING"]["perspective_warp"]["warp_margin"], 
+            cornersImageResolution = self.conf["ROAD_FOLLOWING"]["perspective_warp"]["points_resolution"])
         self.slop_history = {
             "lastValue": 0.0, 
-            "lastUpdate" : self.conf["IMAGE_PROCESSING"]["line_filtering"]["history_size"]+1
+            "lastUpdate" : self.conf["ROAD_FOLLOWING"]["line_filtering"]["history_size"]+1
         }
 
 
@@ -67,15 +60,15 @@ class RoadFollower():
         self.car_state['stop_flags']['no_road'] = True
         start_time = time.time()
         while not self.stopped:
-            img = self.camera.current_frame
+            img  = cv2.resize(src=self.camera.current_frame ,dsize=tuple(self.conf["ROAD_FOLLOWING"]["img_resolution"])) #self.camera.current_frame #
             steering_value = self._getSteering(img, draw_result= self.conf["DISPLAY"]["show_plots"])
             if (steering_value): self.steeringCtrl.angle(steering_value)
 
             # Check if no lines is found from a long time and stop car
-            self.car_state['stop_flags']['no_road'] = (self.slop_history['lastUpdate'] > self.conf["IMAGE_PROCESSING"]["line_filtering"]["history_size"])
+            self.car_state['stop_flags']['no_road'] = (self.slop_history['lastUpdate'] > self.conf["ROAD_FOLLOWING"]["line_filtering"]["history_size"])
 
             if self.current_threads_fps is not None:
-                self.current_threads_fps[self.__class__.__name__] = 1000*(time.time()-start_time)
+                self.current_threads_fps[self.__class__.__name__] = 1/(time.time()-start_time)
                 start_time = time.time()
 
 
@@ -103,9 +96,10 @@ class RoadFollower():
         
         img_thresholded = my_lib.inRangeHSV(
             src = img_HSV, 
-            lowerb = self.conf["IMAGE_PROCESSING"]["hsv_threshold"]["low"], 
-            upperb = self.conf["IMAGE_PROCESSING"]["hsv_threshold"]["high"])
+            lowerb = self.conf["ROAD_FOLLOWING"]["hsv_threshold"]["low"], 
+            upperb = self.conf["ROAD_FOLLOWING"]["hsv_threshold"]["high"])
         
+        # img_thresholded = cv2.morphologyEx(img_thresholded, cv2.MORPH_CLOSE, np.ones((10,10),np.uint8))
         
         # Label connected pixels to form groups
         # https://docs.opencv.org/master/d3/dc0/group__imgproc__shape.html
@@ -115,7 +109,7 @@ class RoadFollower():
         # Take only big connected pixel groups
         
         line_label = np.where(
-            blobs_stats[1:, cv2.CC_STAT_AREA] >= self.conf["IMAGE_PROCESSING"]["line_filtering"]["min_area"]*img_thresholded.size/100)[0]+1 # the "1" is to exclude label 0 who is the background
+            blobs_stats[1:, cv2.CC_STAT_AREA] >= self.conf["ROAD_FOLLOWING"]["line_filtering"]["min_area"]*img_thresholded.size/100)[0]+1 # the "1" is to exclude label 0 who is the background
         # Quit if no lines found
         
         if (line_label.size == 0):
@@ -131,9 +125,6 @@ class RoadFollower():
                 # Polyfit
                 p, V, = np.polyfit(y, x, 1, cov = True) # inversion of x and y because lines are mostly vertical
                 std_err = np.sqrt(V[0,0])
-                # Linregress
-                # slope, intercept, r_value, p_value, std_err = stats.linregress(y, x)
-                # p = (slope, intercept)
                 all_coef.append(p)
                 std_deviation.append(std_err)
 
@@ -144,13 +135,13 @@ class RoadFollower():
 
             ## Selection of correct lines
             # Lines with a small standard deviation.
-            wantedLines_mask = (std_deviation < self.conf["IMAGE_PROCESSING"]["line_filtering"]["max_SD"])
+            wantedLines_mask = (std_deviation < self.conf["ROAD_FOLLOWING"]["line_filtering"]["max_SD"])
             # Line with relatively the same slope as before
             # If the last update of the history is old, this criterion is not taken into account
-            if(self.slop_history["lastUpdate"] < self.conf["IMAGE_PROCESSING"]["line_filtering"]["history_size"]):
+            if(self.slop_history["lastUpdate"] < self.conf["ROAD_FOLLOWING"]["line_filtering"]["history_size"]):
                 wantedLines_mask &= (
-                    (all_coef[:,0]<self.slop_history["lastValue"]+self.conf["IMAGE_PROCESSING"]["line_filtering"]["slop_margin"]) & 
-                    (all_coef[:,0]>self.slop_history["lastValue"]-self.conf["IMAGE_PROCESSING"]["line_filtering"]["slop_margin"])
+                    (all_coef[:,0]<self.slop_history["lastValue"]+self.conf["ROAD_FOLLOWING"]["line_filtering"]["slop_margin"]) & 
+                    (all_coef[:,0]>self.slop_history["lastValue"]-self.conf["ROAD_FOLLOWING"]["line_filtering"]["slop_margin"])
                 )
 
             # Classify left/right lines
@@ -174,25 +165,25 @@ class RoadFollower():
                 ## Compute the off-centre value of the car
                 leftLine_bottom_intercept = lines_bottom_intercept[leftLines_mask].mean()
                 rightLine_bottom_intercept = lines_bottom_intercept[rightLines_mask].mean()
-
+                line_spacing = self.conf["ROAD_FOLLOWING"]["line_spacing"]/100 * self.conf["ROAD_FOLLOWING"]["img_resolution"][0]
                 if  my_lib.isaN(leftLine_bottom_intercept) and my_lib.isaN(rightLine_bottom_intercept): #both line found
                     road_center = np.mean((leftLine_bottom_intercept, rightLine_bottom_intercept))
                 elif my_lib.isaN(leftLine_bottom_intercept): #left line found
-                    road_center = leftLine_bottom_intercept + self.conf["IMAGE_PROCESSING"]["line_spacing"]/2
+                    road_center = leftLine_bottom_intercept + line_spacing/2
                 elif my_lib.isaN(rightLine_bottom_intercept): #right line found
-                    road_center = rightLine_bottom_intercept - self.conf["IMAGE_PROCESSING"]["line_spacing"]/2
+                    road_center = rightLine_bottom_intercept - line_spacing/2
                 else: #no line found
                     raise Exception("No line found. It should not be possible, at this stage of the code, not to find a line")
 
                 off_centre = img_thresholded.shape[1]/2 - road_center
-                off_centre_norm_clamped = my_lib.clamp(off_centre/(self.conf["IMAGE_PROCESSING"]["line_spacing"]/2),-1,1) #Normalize centerDiff that can be between +-lineSpacing/2 to become between +-1
+                off_centre_norm_clamped = my_lib.clamp(off_centre/(line_spacing/2),-1,1) #Normalize centerDiff that can be between +-lineSpacing/2 to become between +-1
                 # Applies to the car's off-centre value (which is linear) a "tan" function to accentuate the value as the car moves away from the centre.
                 off_centre_tan = np.tan(off_centre_norm_clamped*np.pi/4)
 
 
                 ## Combine angle and off-center of the car to compute steering
                 slop_clamped = my_lib.clamp(slop, -1, 1)
-                car_steering_norm = my_lib.mix(slop_clamped, off_centre_tan, np.abs(slop_clamped))
+                car_steering_norm  =my_lib.clamp(my_lib.mix(slop_clamped, off_centre_tan, np.abs(slop_clamped))*1.5, -1, 1) 
             
             
         # Draw a img with line and info if required
@@ -219,12 +210,12 @@ class RoadFollower():
                     line_color = self.conf["DISPLAY"]["lineColor_left"]
                 else:
                     line_color = self.conf["DISPLAY"]["lineColor_rejected"]
-                cv2.polylines(drawed_result, [draw_points], False, line_color, 5)
+                cv2.polylines(drawed_result, [draw_points], False, line_color, math.ceil(self.conf["ROAD_FOLLOWING"]["img_resolution"][0]/150))
                 # Draw text
                 text_org = (
                     blobs_stats[line_label[i],cv2.CC_STAT_LEFT] + int(blobs_stats[line_label[i],cv2.CC_STAT_WIDTH]/2), 
                     blobs_stats[line_label[i],cv2.CC_STAT_TOP] + int(blobs_stats[line_label[i],cv2.CC_STAT_HEIGHT]/2)
                 )
-                drawed_result = cv2.putText(drawed_result,f"SD = {std_deviation[i]:.4f}",text_org, cv2.FONT_HERSHEY_SIMPLEX, 1, self.conf["DISPLAY"]["textColor"], 2)
+                drawed_result = cv2.putText(drawed_result,f"SD = {std_deviation[i]:.4f}",text_org, cv2.FONT_HERSHEY_SIMPLEX, self.conf["ROAD_FOLLOWING"]["img_resolution"][0]/400, self.conf["DISPLAY"]["textColor"], 1)
             self.drawed_img = drawed_result
         return car_steering_norm

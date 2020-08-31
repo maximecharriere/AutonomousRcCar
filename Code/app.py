@@ -3,9 +3,11 @@
 # ----------------------------------- Infos -----------------------------------
 #   Author:            Maxime Charriere
 #   Project:           Autonomous RC Car
+#   File:              app.py
 #   Link:              https://github.com/maximecharriere/AutonomousRcCar
+#   Creation date :    26.03.2020
+#   Last modif date:   04.05.2020
 # ----------------------------------- Infos -----------------------------------
-
 
 # -------------------------------- Description --------------------------------
 #   Main file to compute the road detection
@@ -120,10 +122,8 @@ class AutonomousCarApp():
                             if (self.car_state_history != self.car_state):
                                 self.car_state_history = copy.deepcopy(self.car_state)
                                 if (any(self.car_state['stop_flags'].values())):
-                                    # print('STOP', self.car_state)
                                     self.car.speedCtrl.stop()
                                 else:
-                                    # print('START', self.car_state)
                                     self.car.speedCtrl.speed(self.car_state['speed_limit'])
 
                             # Show result with plots

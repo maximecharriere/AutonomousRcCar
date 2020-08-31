@@ -1,17 +1,21 @@
 #!/usr/bin/env python3
 
-# ----------------------------------- Infos -----------------------------------
+## ----------------------------------- Infos -----------------------------------
 #   Author:            Maxime Charriere
 #   Project:           Autonomous RC Car
+#   File:              myLib.py
 #   Link:              https://github.com/maximecharriere/AutonomousRcCar
-# ----------------------------------- Infos -----------------------------------
+#   Creation date :    12.04.2020
+#   Last modif date:   12.04.2020
+## ----------------------------------- Infos -----------------------------------
 
 ## -------------------------------- Description --------------------------------
 #   This file contains all my useful functions that I often use 
 ## -------------------------------- Description --------------------------------
 
 
-
+## Work exactly like Arduino's map function
+# https://www.arduino.cc/reference/en/language/functions/math/map/
 
 import matplotlib.pyplot as plt
 import cv2
@@ -24,8 +28,6 @@ def load_configuration(conf_file):
         conf = yaml.load(fd, Loader=yaml.FullLoader)
     return conf
 
-## Work exactly like Arduino's map function
-# https://www.arduino.cc/reference/en/language/functions/math/map/
 def map(x_in, in_min, in_max, out_min, out_max, limit=False):
     x_out = (x_in - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
     if limit:

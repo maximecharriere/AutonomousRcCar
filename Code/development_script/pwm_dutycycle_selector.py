@@ -1,11 +1,3 @@
-#!/usr/bin/env python3
-
-# ----------------------------------- Infos -----------------------------------
-#   Author:            Maxime Charriere
-#   Project:           Autonomous RC Car
-#   Link:              https://github.com/maximecharriere/AutonomousRcCar
-# ----------------------------------- Infos -----------------------------------
-
 import sys, getopt, os,inspect
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)

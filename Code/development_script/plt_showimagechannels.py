@@ -3,7 +3,10 @@
 # ----------------------------------- Infos -----------------------------------
 #   Author:            Maxime Charriere
 #   Project:           Autonomous RC Car
+#   File:              imgChannelDifference.py
 #   Link:              https://github.com/maximecharriere/AutonomousRcCar
+#   Creation date :    18.05.2020
+#   Last modif date:   18.05.2020
 # ----------------------------------- Infos -----------------------------------
 
 # -------------------------------- Description --------------------------------

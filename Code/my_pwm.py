@@ -1,11 +1,4 @@
 #!/usr/bin/env python3
-
-# ----------------------------------- Infos -----------------------------------
-#   Author:            Maxime Charriere
-#   Project:           Autonomous RC Car
-#   Link:              https://github.com/maximecharriere/AutonomousRcCar
-# ----------------------------------- Infos -----------------------------------
-
 import os
 import RPi.GPIO as GPIO
 
@@ -103,7 +96,6 @@ class HardPwm(_IPwm):
 
     def set_duty_cycle(self,milliseconds):
         self.duty_cycle = milliseconds
-        # print(self.duty_cycle)
         dutycycle_ns = int(self.duty_cycle * 1000000) #in ns
         dutycycle_file = f"{self.pwmdir}/duty_cycle"
         self._sudo_echo(dutycycle_ns,dutycycle_file)    

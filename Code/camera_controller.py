@@ -1,11 +1,4 @@
-#!/usr/bin/env python3
-
-# ----------------------------------- Infos -----------------------------------
-#   Author:            Maxime Charriere
-#   Project:           Autonomous RC Car
-#   Link:              https://github.com/maximecharriere/AutonomousRcCar
-# ----------------------------------- Infos -----------------------------------
-
+#inspired by https://github.com/jrosebr1/imutils/blob/master/imutils/video/pivideostream.py
 
 # import the necessary packages
 from picamera.array import PiRGBArray
@@ -84,7 +77,7 @@ class PicameraController(PiCamera):
 			# preparation for the next frame
 			img = f.array
 			self.rawCapture.truncate(0)
-			self.current_frame = img#self.imgRectifier.undistort(img)
+			self.current_frame = img
 			# if the thread indicator variable is set, stop the thread
 			# and restor camera resources
 			if self.stopped:

@@ -1,11 +1,3 @@
-#!/usr/bin/env python3
-
-# ----------------------------------- Infos -----------------------------------
-#   Author:            Maxime Charriere
-#   Project:           Autonomous RC Car
-#   Link:              https://github.com/maximecharriere/AutonomousRcCar
-# ----------------------------------- Infos -----------------------------------
-
 from threading import Timer
 
 
@@ -42,7 +34,7 @@ class TrafficLight(_ITrafficSignProcessor):
         self.max_no_light_gap = 5
 
     def set_car_state(self, car_state):
-        if self.color == 'red':
+        if self.color == 'Red':
             if self.present:
                 self.no_light_count = 0
                 car_state['stop_flags']['red_light'] = True
@@ -52,7 +44,7 @@ class TrafficLight(_ITrafficSignProcessor):
                         car_state['stop_flags']['red_light'] = False
                 else:
                     self.no_light_count +=1
-        elif self.color == 'green' or self.color == 'off':
+        elif self.color == 'Green' or self.color == 'Off':
             pass
             
                 
