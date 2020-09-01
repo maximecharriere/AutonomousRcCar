@@ -1,3 +1,4 @@
-# AutonomousRcCar
-Travail de bachelor - HEIG-VD
-![Image de la maquette](https://github.com/Hysterresis/AutonomousRcCar/blob/master/ProjetMap/ProjectMap.png)
+# Autonomous Rc Car
+###### *by Maxime Charrière*
+
+Visit my [**Wiki**](https://github.com/maximecharriere/AutonomousRcCar/wiki) for full informations
