@@ -110,16 +110,15 @@ class AutonomousCarApp():
                                         elif event.type == ecodes.EV_ABS:
                                             if  event.code == ecodes.ABS_HAT0Y:
                                                 if event.value == 1: #Croix / Bas
-                                                    self.objectDetector.traffic_objects['SpeedLimit25'].speed_limit -= 0.02
-                                                    self.car_state['speed_limit'] -= 0.02
+                                                    self.car_state['speed_limit'] -= 0.01
                                                 elif  event.value == -1: #Croix / Haut
-                                                    self.objectDetector.traffic_objects['SpeedLimit25'].speed_limit += 0.02
-                                                    self.car_state['speed_limit'] += 0.02
+                                                    self.car_state['speed_limit'] += 0.01
                                 except BlockingIOError:
                                     pass
                             
                             ## Car speed
                             if (self.car_state_history != self.car_state):
+                                print(self.car_state)
                                 self.car_state_history = copy.deepcopy(self.car_state)
                                 if (any(self.car_state['stop_flags'].values())):
                                     self.car.speedCtrl.stop()

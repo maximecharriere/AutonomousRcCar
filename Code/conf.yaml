@@ -53,7 +53,7 @@ PROXIMITY:
 
 OBJECT_DETECTION:
     model_fname: 'resources/model_quantized_edgetpu_V2.tflite'
-    match_threshold: 0.3 #%
+    match_threshold: 0.6 #%
     max_obj: 3
     detection_distance: 800 #mm
     obj_height: #mm
@@ -62,7 +62,7 @@ OBJECT_DETECTION:
         SpeedLimit: 70
         Battery: 70
     stop_sign_wait_time: 3 #s
-    max_fps: 20
+    max_fps: 30
 
 CAR:
     speed_pwm_dc_min: 1.4
@@ -80,7 +80,7 @@ CONTROLLER:
 DISPLAY:
     show_plots: False
     show_cam_preview: False
-    show_fps: True
+    show_fps: False
     linecolor_right: [0,255,0] #[255,0,255] #rgb
     lineColor_left: [0,255,0] #[255,255,0] #rgb
     lineColor_rejected: [255,0,0] #rgb

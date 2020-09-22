@@ -68,12 +68,13 @@ class ObjectsDetector:
                 top_k=self.conf['OBJECT_DETECTION']['max_obj'])
             for obj in objs:
                 traffic_obj = self.traffic_objects[obj.label_id]
-                if traffic_obj.is_nearby(obj):
+                obj_is_nearby = traffic_obj.is_nearby(obj)
+                if obj_is_nearby:
                     traffic_obj.present = True
 
                 # Print and draw detected objects.
                 if self.conf["DISPLAY"]["show_plots"]:
-                    cv2.rectangle(img,tuple(obj.bounding_box[0].astype(int)),tuple(obj.bounding_box[1].astype(int)), color=(0,255,0) if traffic_obj.is_nearby(obj) else (255,0,0))
+                    cv2.rectangle(img,tuple(obj.bounding_box[0].astype(int)),tuple(obj.bounding_box[1].astype(int)), color=(0,255,0) if obj_is_nearby else (255,0,0))
                     cv2.putText(img, f"{traffic_obj.label} ({obj.score*100:.0f}%)",tuple(obj.bounding_box[0].astype(int)-(70,0)),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.conf["DISPLAY"]["textColor"], 1)
             self.drawed_img = img
             
