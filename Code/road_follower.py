@@ -10,6 +10,7 @@ from scipy import stats
 from threading import Thread
 from img_warper import ImgWarper
 from img_rectifier import ImgRectifier
+import datetime
 
 class RoadFollower():
     # Var to stop the thread
@@ -154,7 +155,7 @@ class RoadFollower():
             # Quit if no correct lines found
             if (np.where(wantedLines_mask)[0].size == 0):
                 self.slop_history["lastUpdate"]+=1
-                print(f"No correct line found ({self.slop_history['lastUpdate']})")
+                # print(f"No correct line found ({self.slop_history['lastUpdate']})")
             else:
                 ## Compute the mean slop of all lines
                 slop = np.mean(all_coef[wantedLines_mask,0])
@@ -218,4 +219,5 @@ class RoadFollower():
                 )
                 drawed_result = cv2.putText(drawed_result,f"SD = {std_deviation[i]:.4f}",text_org, cv2.FONT_HERSHEY_SIMPLEX, self.conf["ROAD_FOLLOWING"]["img_resolution"][0]/400, self.conf["DISPLAY"]["textColor"], 1)
             self.drawed_img = drawed_result
+
         return car_steering_norm

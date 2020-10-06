@@ -82,9 +82,9 @@ class AutonomousCarApp():
             print("A wrong gamepad event filename is provided or the gamepad is not connected !")
         
     def start(self):
-        if self.conf["DISPLAY"]["show_plots"]:
-            cv2.namedWindow("ObjectsDetector", cv2.WINDOW_NORMAL)
-            cv2.namedWindow("RoadFollower", cv2.WINDOW_NORMAL)
+        # if self.conf["DISPLAY"]["show_plots"]:
+        #     cv2.namedWindow("ObjectsDetector", cv2.WINDOW_NORMAL)
+        #     cv2.namedWindow("RoadFollower", cv2.WINDOW_NORMAL)
                 
         with self.car: #start motor, steering commande and camera
             with self.roadFollower: #start the road following algorithm
@@ -126,11 +126,11 @@ class AutonomousCarApp():
                                     self.car.speedCtrl.speed(self.car_state['speed_limit'])
 
                             # Show result with plots
-                            if self.conf["DISPLAY"]["show_plots"]:
-                                if self.objectDetector.drawed_img is not None:
-                                    cv2.imshow("ObjectsDetector", cv2.cvtColor(self.objectDetector.drawed_img, cv2.COLOR_RGB2BGR))
-                                if self.roadFollower.drawed_img is not None:
-                                    cv2.imshow("RoadFollower", cv2.cvtColor(self.roadFollower.drawed_img, cv2.COLOR_RGB2BGR))
+                            # if self.conf["DISPLAY"]["show_plots"]:
+                            #     if self.objectDetector.drawed_img is not None:
+                            #         cv2.imshow("ObjectsDetector", cv2.cvtColor(self.objectDetector.drawed_img, cv2.COLOR_RGB2BGR))
+                            #     if self.roadFollower.drawed_img is not None:
+                            #         cv2.imshow("RoadFollower", cv2.cvtColor(self.roadFollower.drawed_img, cv2.COLOR_RGB2BGR))
                             # Quit
                             key = cv2.waitKey(1)
                             if key == ord("q"):

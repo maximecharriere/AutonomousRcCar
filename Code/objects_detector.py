@@ -2,11 +2,13 @@ import sys, getopt, os,inspect
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
 import cv2
+import numpy as np
 import time
 from edgetpu.detection.engine import DetectionEngine
 from PIL import Image
 from traffic_signs import *
 from threading import Thread
+
 
 
 class ObjectsDetector:
@@ -58,14 +60,18 @@ class ObjectsDetector:
     def _run(self):
         start_time = time.time()
         while not self.stopped:
-            img = self.camera.current_frame
+            self.camera.new_frame_event.wait()
             # Run inference.
             objs = self.engine.detect_with_image(
-                Image.fromarray(img), 
+                Image.fromarray(self.camera.current_frame), 
                 keep_aspect_ratio =False, 
                 relative_coord=False,
                 threshold=self.conf['OBJECT_DETECTION']['match_threshold'],
                 top_k=self.conf['OBJECT_DETECTION']['max_obj'])
+
+            if self.conf["DISPLAY"]["show_plots"]:
+                img = np.array(self.camera.current_frame, copy=True)
+
             for obj in objs:
                 traffic_obj = self.traffic_objects[obj.label_id]
                 obj_is_nearby = traffic_obj.is_nearby(obj)
@@ -76,8 +82,10 @@ class ObjectsDetector:
                 if self.conf["DISPLAY"]["show_plots"]:
                     cv2.rectangle(img,tuple(obj.bounding_box[0].astype(int)),tuple(obj.bounding_box[1].astype(int)), color=(0,255,0) if obj_is_nearby else (255,0,0))
                     cv2.putText(img, f"{traffic_obj.label} ({obj.score*100:.0f}%)",tuple(obj.bounding_box[0].astype(int)-(70,0)),cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.conf["DISPLAY"]["textColor"], 1)
-            self.drawed_img = img
-            
+
+            if self.conf["DISPLAY"]["show_plots"]:
+                self.drawed_img = img
+
             # The 25 speed limit sign has priority.
             if self.traffic_objects['SpeedLimit25'].present:
                 self.traffic_objects['SpeedLimit50'].present = False

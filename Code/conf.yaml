@@ -42,13 +42,13 @@ ROAD_FOLLOWING:
         high: [47,215,255]
     line_filtering: 
         min_area: 0.1 # in % of img area
-        max_SD: 0.005 #standard deviation
+        max_SD: 0.008 #standard deviation
         slop_margin: 0.5
         history_size: 5
     line_spacing: 89.7 #% of img width
 
 PROXIMITY:
-    min_distance: 700 #mm
+    min_distance: 500 #mm
     max_fps: 20
 
 OBJECT_DETECTION:
@@ -61,7 +61,7 @@ OBJECT_DETECTION:
         TrafficLight: 80
         SpeedLimit: 70
         Battery: 70
-    stop_sign_wait_time: 3 #s
+    stop_sign_wait_time: 2 #s
     max_fps: 30
 
 CAR:

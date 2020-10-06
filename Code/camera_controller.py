@@ -3,13 +3,15 @@
 # import the necessary packages
 from picamera.array import PiRGBArray
 from picamera import PiCamera
-from threading import Thread
+from threading import Thread, Event
 import time
 import io
 
 class PicameraController(PiCamera):
 	# Var to stop the thread
 	stopped = False
+	current_frame = None
+	new_frame_event = Event()
 
 	def __init__(self, 
 		cam_param_dict = {},
@@ -37,8 +39,6 @@ class PicameraController(PiCamera):
 		self.rawCapture = PiRGBArray(self, size=self.resolution)
 		self.stream = self.capture_continuous(self.rawCapture,
 			format="rgb", use_video_port=True)
-
-		self.current_frame = None
 
 	def capture_np(self):
 		self.capture(self.rawCapture, format="rgb", use_video_port=True)
@@ -75,9 +75,12 @@ class PicameraController(PiCamera):
 		for f in self.stream:
 			# grab the frame from the stream and clear the stream in
 			# preparation for the next frame
-			img = f.array
+			self.current_frame = f.array
 			self.rawCapture.truncate(0)
-			self.current_frame = img
+			# Throw event to tell that a new img was taken
+			self.new_frame_event.set()
+			self.new_frame_event.clear()
+			
 			# if the thread indicator variable is set, stop the thread
 			# and restor camera resources
 			if self.stopped:
