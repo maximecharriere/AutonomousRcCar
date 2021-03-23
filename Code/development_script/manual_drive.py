@@ -20,7 +20,7 @@ sys.path.insert(0,parentdir)
 import asyncio
 from evdev import InputDevice, categorize, ecodes, util
 import my_lib
-from pwmcontroller import SteeringController, SpeedController
+from actuator_controller import SteeringController, SpeedController
 
 """Pin declaration with BCM format"""
 PIN_SPEED = 18
@@ -44,6 +44,7 @@ def main(argv):
        elif opt in ("-e", "--event"):
            event_filename = arg
     run_manually(event_filename)
+
 
 def run_manually(event_filename):
     controller = InputDevice(event_filename)
